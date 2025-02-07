@@ -1,0 +1,2 @@
+# linux specific aliases
+alias ll='ls -alFhXv'

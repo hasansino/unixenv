@@ -1,0 +1,24 @@
+
+# universal unix aliases
+
+# navigation
+alias ..='cd ..'
+alias xx="exit"
+alias c='clear'
+
+# utilities
+alias ds="du -cb --si -d 1"
+alias cnt="ls | wc -l"
+
+# git
+alias gs='git status'
+
+# docker
+alias dc='docker compose'
+
+# golang
+alias gotest='go test ./...'
+alias gobench='go test -bench=.'
+
+# external scripts
+alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'

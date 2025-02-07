@@ -1,0 +1,6 @@
+
+# system wide variables
+export EDITOR=nano
+export VISUAL=nano
+
+eval $(thefuck --alias)

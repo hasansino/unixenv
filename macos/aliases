@@ -1,0 +1,2 @@
+# macos specific aliases
+alias ll='ls -alFhv'
