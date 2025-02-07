@@ -1,3 +1,3 @@
-# UNIX auto-configuration script
+# UNIX configuration AILI
 
-`curl -sSL https://raw.githubusercontent.com/username/repository/branch/setup.sh | bash`
+`curl -sSL https://raw.githubusercontent.com/hasansino/unixenv/refs/heads/master/setup.sh | bash`
