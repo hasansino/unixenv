@@ -15,6 +15,8 @@ alias gs='git status'
 
 # docker
 alias dc='docker compose'
+alias dr='docker compose stop && docker compose up -d && docker compose logs -f'
+alias drb='docker compose stop && docker compose rm -vf && docker compose up -d && docker compose logs -f'
 
 # golang
 alias gotest='go test ./...'
