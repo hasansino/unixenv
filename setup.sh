@@ -63,7 +63,6 @@ elif [[ -f /etc/debian_version ]]; then
     # apt requires sudo
     if [ "$EUID" -ne 0 ]; then
       echo "Please run as root to install packages"
-      exit 1
     else
       echo "Installing packages..."
       apt install -q -y htop thefuck broot bat exa
