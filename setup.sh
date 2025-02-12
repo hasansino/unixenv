@@ -58,18 +58,18 @@ elif [[ -f /etc/debian_version ]]; then
 
     # update .bashrc
     cat "$CLONE_DIR/generic/rc" >> "$HOME/.bashrc"
-    cat "$CLONE_DIR/linux/bashrc" >> "$HOME/.bashrc"
+    cat "$CLONE_DIR/linux/.bashrc" >> "$HOME/.bashrc"
 
     # apt requires sudo
     if [ "$EUID" -ne 0 ]; then
-      echo "Please run as root"
+      echo "Please run as root to install packages"
       exit 1
+    else
+      echo "Installing packages..."
+      apt install -q -y htop thefuck broot bat exa
+      curl -L https://github.com/xxxserxxx/gotop/releases/latest/download/gotop_v4.2.0_linux_amd64.deb -o gotop.deb
+      dpkg -i gotop.deb || apt install -f -y
     fi
-
-    # install packages
-    apt install -q -y htop thefuck broot bat exa
-    curl -L https://github.com/xxxserxxx/gotop/releases/latest/download/gotop_v4.2.0_linux_amd64.deb -o gotop.deb
-    dpkg -i gotop.deb || apt install -f -y
 
     app_configs
 else
