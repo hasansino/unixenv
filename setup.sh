@@ -2,7 +2,6 @@
 
 set -e
 set -x
-set -o pipefail
 
 # check if already installed
 LOCK_FILE="$HOME/.unixenv.lock"
@@ -42,10 +41,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # check for homebrew
     if ! type brew >/dev/null 2>&1; then
         echo "Homebrew is not installed. Please install Homebrew first."
-        exit 1
+    else
+        # install packages
+        brew -q install htop gotop thefuck broot bat exa
     fi
-    # install packages
-    brew -q install htop gotop thefuck broot bat exa
 
     app_configs
 
