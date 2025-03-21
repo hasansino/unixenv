@@ -1,2 +1,3 @@
 # macos specific aliases
 alias ll='ls -alFhv'
+alias rmdsstore='sudo find /opt -name ".DS_Store" -type f -delete'
