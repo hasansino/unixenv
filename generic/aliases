@@ -7,7 +7,6 @@ alias xx="exit"
 alias c='clear'
 
 # utilities
-alias ds="du -cb --si -d 1"
 alias cnt="ls | wc -l"
 
 # git
