@@ -15,7 +15,16 @@ alias gs='git status'
 # docker
 alias dc='docker compose'
 alias dr='docker compose stop && docker compose up -d && docker compose logs -f'
-alias drb='docker compose stop && docker compose rm -vf && docker compose up -d && docker compose logs -f'
+
+dcrb() {
+    # If no arguments are passed, apply to all services
+    if [[ $# -eq 0 ]]; then
+        docker compose stop && docker compose rm -vf && docker compose up -d && docker compose logs -f
+    else
+        # If arguments are passed, apply commands to specified services
+        docker compose stop "$@" && docker compose rm -vf "$@" && docker compose up -d "$@" && docker compose logs -f "$@"
+    fi
+}
 
 # golang
 alias gotest='go test ./...'
@@ -23,3 +32,4 @@ alias gobench='go test -bench=.'
 
 # external scripts
 alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'
+
