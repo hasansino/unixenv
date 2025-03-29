@@ -1,5 +1,5 @@
 
-# universal unix aliases
+# generic aliases
 
 # navigation
 alias ..='cd ..'
@@ -27,7 +27,8 @@ dcrb() {
 }
 
 # golang
-alias gotest='go test ./...'
+goenv() { source goenv-scp "$1" "$2" }
+alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
 
 # external scripts

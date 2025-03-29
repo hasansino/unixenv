@@ -1,0 +1,146 @@
+#!/bin/bash
+
+is_valid_version() {
+    local version="$1"
+    if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      return 0
+    else
+      return 1
+    fi
+}
+
+find_go_download() {
+    local download_url="https://go.dev/dl"
+    local version="$1"
+    local os_type="$(uname | tr '[:upper:]' '[:lower:]')"
+    local target_arch
+    local json_data
+
+    case "$os_type" in
+        darwin) os_type="darwin" ;;
+        linux) os_type="linux" ;;
+        mingw*|msys*|cygwin*) os_type="windows" ;;
+    esac
+
+    if [ -z "$target_arch" ]; then
+        local machine="$(uname -m)"
+        case "$machine" in
+            x86_64) target_arch="amd64" ;;
+            i?86) target_arch="386" ;;
+            arm64|aarch64) target_arch="arm64" ;;
+            armv6*|armv7*) target_arch="armv6l" ;;
+            ppc64le) target_arch="ppc64le" ;;
+            ppc64) target_arch="ppc64" ;;
+            s390x) target_arch="s390x" ;;
+            mips*)
+                if [[ "$(lscpu 2>/dev/null | grep 'Little Endian')" != "" ]]; then
+                    target_arch="mipsle"
+                else
+                    target_arch="mips"
+                fi
+                ;;
+            *)
+                echo "Error: Unsupported architecture: $machine" >&2
+                return 1
+                ;;
+        esac
+        echo "Auto-detected architecture: $target_arch" >&2
+    fi
+
+    json_data=$(curl -s "https://go.dev/dl/?mode=json&include=all")
+
+    local file_info=$(echo "$json_data" | jq -r --arg v "go$version" --arg os "$os_type" --arg arch "$target_arch" \
+        '.[] | select(.version == $v) | .files[] | select(.os == $os and .arch == $arch and .kind == "archive")')
+
+    if [ -z "$file_info" ]; then
+        echo "Error: No download found for Go $version on $os_type/$target_arch" >&2
+        return 1
+    fi
+
+    local filename=$(echo "$file_info" | jq -r '.filename')
+    local sha256=$(echo "$file_info" | jq -r '.sha256')
+
+    echo "$download_url/$filename#sha256=$sha256"
+}
+
+find_or_download_go_sdk() {
+    local ROOT_DIR="$1"
+    local GO_VERSION="$2"
+    local SDK_DIR="${ROOT_DIR}/gosdk"
+
+    mkdir -p "$SDK_DIR"
+
+    local exact_dir="${SDK_DIR}/go${GO_VERSION}"
+    if [ -d "$exact_dir" ]; then
+        echo "go${GO_VERSION}"
+        return 0
+    fi
+
+    echo "Go SDK version $GO_VERSION not found, downloading..." >&2
+    local download_url=$(find_go_download "$GO_VERSION")
+    if [ $? -ne 0 ] || [ -z "$download_url" ]; then
+        echo "Failed to get download URL for Go $GO_VERSION" >&2
+        return 1
+    fi
+
+    local temp_file=$(mktemp)
+    echo "Downloading from: $download_url" >&2
+
+    if ! curl -L -o "$temp_file" "$download_url"; then
+        echo "Download failed" >&2
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    echo "Extracting Go SDK..." >&2
+
+    if [[ "$download_url" == *".tar.gz"* ]]; then
+        tar -xzf "$temp_file" -C "$SDK_DIR"
+    elif [[ "$download_url" == *".zip"* ]]; then
+        unzip -q "$temp_file" -d "$SDK_DIR"
+    else
+        echo "Unsupported archive format" >&2
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    rm -f "$temp_file"
+
+    if [ -d "${SDK_DIR}/go" ]; then
+        local actual_version=$(cat "${SDK_DIR}/go/VERSION" 2>/dev/null | grep -o 'go[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "go${GO_VERSION}")
+        mv "${SDK_DIR}/go" "${SDK_DIR}/${actual_version}"
+        echo "${actual_version}"
+    else
+        echo "Extraction failed or unexpected directory structure" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <root-dir> <go-version>" >&2
+    echo "Example: $0 /opt 1.23" >&2
+    exit 1
+fi
+
+ROOT_DIR="$1"
+GO_VERSION="$2"
+
+if ! is_valid_version "$GO_VERSION"; then
+    echo "Error: $GO_VERSION is not a valid version. Please use the format major.minor.patch"
+    exit 1
+fi
+
+SDK=$(find_or_download_go_sdk ${ROOT_DIR} ${GO_VERSION})
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+export GOROOT="${ROOT_DIR}/gosdk/${SDK}"
+export GOPATH="${ROOT_DIR}/gopath"
+export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+
+echo "GOSDK: ${SDK}"
+echo "GOROOT: ${GOROOT}"
+echo "GOPATH: ${GOPATH}"

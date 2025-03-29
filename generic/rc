@@ -1,6 +1,8 @@
 
-# system wide variables
+# generic rc
+# executed every time an interactive shell is started
+
 export EDITOR=nano
 export VISUAL=nano
 
-eval $(thefuck --alias)
+goenv /opt 1.24.1
