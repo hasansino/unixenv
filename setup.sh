@@ -15,9 +15,8 @@ else
 fi
 
 # operate in temporary directory
-TMP_DIR_NAME=$(mktemp)
-mkdir -p "/tmp/unixenv/$TMP_DIR_NAME"
-cd "$TMP_DIR_NAME"
+TMP_DIR=$(mktemp -d)
+cd "$TMP_DIR"
 
 update_file() {
     local header="# >>>>>>>>>>>>>>>>>>>>>> [ UNIXENV CONFIG START ] <<<<<<<<<<<<<<<<<<<<<"
@@ -143,6 +142,6 @@ else
     exit 1
 fi
 
-rm -rf "/tmp/unixenv/$TMP_DIR_NAME"
+rm -rf "$TMP_DIR"
 
 echo "Finished."
