@@ -7,14 +7,21 @@ set -e
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
 if [ -d "$CLONE_DIR" ]; then
+    echo "Updating git repo..."
     git -C "$CLONE_DIR" pull origin master
 else
+    echo "Cloning git repo..."
     git clone "$REPO_URL" "$CLONE_DIR"
 fi
 
+# operate in temporary directory
+TMP_DIR_NAME=$(mktemp)
+mkdir -p "/tmp/unixenv/$TMP_DIR_NAME"
+cd "$TMP_DIR_NAME"
+
 update_file() {
-    local header="# ╔════════════════════ [ UNIXENV CONFIG START ] ════════════════════╗"
-    local footer="# ╚════════════════════ [ UNIXENV CONFIG END   ] ════════════════════╝"
+    local header="# >>>>>>>>>>>>>>>>>>>>>> [ UNIXENV CONFIG START ] <<<<<<<<<<<<<<<<<<<<<"
+    local footer="# >>>>>>>>>>>>>>>>>>>>>> [ UNIXENV CONFIG END   ] <<<<<<<<<<<<<<<<<<<<<"
     local source="$1"
     local target="$2"
 
@@ -100,7 +107,6 @@ elif [[ -f /etc/debian_version ]]; then
     # packages - gotop
     wget https://github.com/xxxserxxx/gotop/releases/latest/download/gotop_v4.2.0_linux_amd64.deb
     dpkg -i gotop_v4.2.0_linux_amd64.deb || apt install -f -y
-    rm -f gotop_v4.2.0_linux_amd64.deb
     # packages - nano 
     apt install -q -y libncurses-dev
     wget https://ftp.gnu.org/gnu/nano/nano-8.3.tar.gz
@@ -109,7 +115,6 @@ elif [[ -f /etc/debian_version ]]; then
     ./configure --prefix=/usr
     make
     make install
-    rm -rf nano-8.3.tar.gz nano-8.3
     nano --version
     update-alternatives --install /usr/bin/editor editor /usr/bin/nano 100
     update-alternatives --set editor /usr/bin/nano
@@ -137,5 +142,7 @@ else
     echo "Unsupported OS type."
     exit 1
 fi
+
+rm -rf "/tmp/unixenv/$TMP_DIR_NAME"
 
 echo "Finished."
