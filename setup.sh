@@ -95,7 +95,7 @@ elif [[ -f /etc/debian_version ]]; then
     # packages
     apt update
     apt install -q -y wget curl watch build-essential htop
-    apt install -q -y zoxide fzf bat broot
+    apt install -q -y zoxide fzf bat
     # packages - gotop
     wget https://github.com/xxxserxxx/gotop/releases/latest/download/gotop_v4.2.0_linux_amd64.deb
     dpkg -i gotop_v4.2.0_linux_amd64.deb || apt install -f -y
