@@ -1,0 +1,24 @@
+[user]
+        name = hasansino
+        email = 4024450+hasansino@users.noreply.github.com
+        signingkey = 3280B0F350525F90
+[help]
+        autocorrect = 1
+[core]
+        excludesfile = ~/.gitignore
+[credential]
+        helper = store
+[commit]
+        gpgsign = true
+[gpg]
+        program = /usr/local/bin/gpg
+[tag]
+        forceSignAnnotated = true
+[init]
+        defaultBranch = master
+[push]
+        default = current
+[pull]
+        rebase = false
+[color]
+        ui = auto

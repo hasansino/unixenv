@@ -1,0 +1,13 @@
+set nohelp
+set zero
+set backupdir "/tmp/.cache/nano"
+set historylog
+set autoindent
+set softwrap
+set indicator
+set linenumbers
+set atblanks
+set tabsize 4
+set tabstospaces
+set zap
+set unix

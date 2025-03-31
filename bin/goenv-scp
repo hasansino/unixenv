@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# This script is designed to be run as alias.
+# Example: `goenv() { source goenv-scp "$1" "$2" }`
+#   $1 - root folder for golang (GOROOT and GOPATH)
+#   $2 - golang version in {major.minor.patch} fromat
+#
+# If version does not exist in $1/gosdk/go{version}, it will be downloaded and extracted.
+# Automatically detects linux / darwin and architecture, choosing corect link from https://go.dev/dl.
+#
+# Exports GOROOT to $1/gosdk/go$2
+# Exports GOPATH to $1/gopath
+
 is_valid_version() {
     local version="$1"
     if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -19,7 +30,6 @@ find_go_download() {
     case "$os_type" in
         darwin) os_type="darwin" ;;
         linux) os_type="linux" ;;
-        mingw*|msys*|cygwin*) os_type="windows" ;;
     esac
 
     if [ -z "$target_arch" ]; then

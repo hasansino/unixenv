@@ -2,6 +2,7 @@
 # generic aliases
 
 # navigation
+alias ll='eza --group-directories-first --show-symlinks --header -al -s name'
 alias ..='cd ..'
 alias xx="exit"
 alias c='clear'
