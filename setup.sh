@@ -1,23 +1,38 @@
 #!/bin/bash
 
 set -e
-set -x
+# set -x
 
-# check if already installed
-LOCK_FILE="$HOME/.unixenv.lock"
-if [ -f "$LOCK_FILE" ]; then
-    echo "Already installed. To install again remove $LOCK_FILE."
-    exit 1
-fi
-touch "$LOCK_FILE"
-
-# clone remote repository
+# clone or update remote repository
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
 if [ -d "$CLONE_DIR" ]; then
-  rm -rf "$CLONE_DIR"
+    git -C "$CLONE_DIR" pull origin master
+else
+    git clone "$REPO_URL" "$CLONE_DIR"
 fi
-git clone "$REPO_URL" "$CLONE_DIR"
+
+update_file() {
+    local header="###~~~ ⚙️  UNIXENV MANAGED CONFIG START ⚙️  ~~~###"
+    local footer="###~~~ ⚙️  UNIXENV MANAGED CONFIG END   ⚙️  ~~~###"
+    local source="$1"
+    local target="$2"
+
+    if [ ! -f "$target" ]; then
+        echo -e "$header\n$source\n$footer" > "$target"
+    elif grep -q "$header" "$target" && grep -q "$footer" "$target"; then
+        TMP_FILE=$(mktemp)
+        echo "$header" > "$TMP_FILE"
+        echo "$source" >> "$TMP_FILE"
+        echo -e "\n" >> "$TMP_FILE"
+        echo "$footer" >> "$TMP_FILE"
+        sed -i '' "/$header/,/$footer/d" "$target"
+        cat "$TMP_FILE" >> "$target"
+        rm "$TMP_FILE"
+    else
+        echo -e "\n$header\n$source\n$footer" >> "$target"
+    fi
+}
 
 app_configs() {
     # nano
@@ -36,7 +51,9 @@ app_configs() {
 
 binaries() {
     # alias `goenv`
-    ln -s "$(pwd)/bin/goenv-scp" /usr/local/bin/goenv-scp
+    if [ ! -L "/usr/local/bin/goenv-scp" ]; then
+        ln -s "$(pwd)/bin/goenv-scp" /usr/local/bin/goenv-scp
+    fi
 }
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -48,13 +65,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     fi
 
     # .zprofile
-    cat "$CLONE_DIR/macos/.zprofile" >> "$HOME/.zprofile"
+    update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
     # .zshrc
-    cat "$CLONE_DIR/generic/rc" >> "$HOME/.zshrc"
-    cat "$CLONE_DIR/macos/zshrc" >> "$HOME/.zshrc"
+    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/macos/.zshrc")" "$HOME/.zshrc"
     # .zsh_aliases
-    cat "$CLONE_DIR/generic/aliases" >> "$HOME/.zsh_aliases"
-    cat "$CLONE_DIR/macos/aliases" >> "$HOME/.zsh_aliases"
+    update_file "$(cat "$CLONE_DIR/generic/aliases" "$CLONE_DIR/macos/.zsh_aliases")" "$HOME/.zsh_aliases"   
 
     # packages
     brew -q install wget curl watch nano htop
@@ -71,13 +86,13 @@ elif [[ -f /etc/debian_version ]]; then
     fi
 
     # .bash_profile
-    cat "$CLONE_DIR/linux/.bash_profile" >> "$HOME/.bash_profile"
+    update_file "$CLONE_DIR/linux/.bash_profile" "$HOME/.bash_profile"
     # .bashrc
-    cat "$CLONE_ DIR/generic/rc" >> "$HOME/.bashrc"
-    cat "$CLONE_DIR/linux/.bashrc" >> "$HOME/.bashrc"
+    update_file "$CLONE_DIR/generic/rc" "$HOME/.bashrc"
+    update_file "$CLONE_DIR/linux/.bashrc" "$HOME/.bashrc"
     # .bash_aliases
-    cat "$CLONE_DIR/generic/aliases" >> "$HOME/.bash_aliases"
-    cat "$CLONE_DIR/linux/.bash_aliases" >> "$HOME/.bash_aliases"
+    update_file "$CLONE_DIR/generic/aliases" "$HOME/.bash_aliases"
+    update_file "$CLONE_DIR/linux/.bash_aliases" "$HOME/.bash_aliases"
 
     # packages
     apt update

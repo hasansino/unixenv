@@ -1,4 +1,3 @@
-
 # linux rc
 # executed every time an interactive shell is started
 

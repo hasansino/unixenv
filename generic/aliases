@@ -1,4 +1,3 @@
-
 # generic aliases
 
 # navigation
@@ -34,4 +33,3 @@ alias gobench='go test -bench=.'
 
 # external scripts
 alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'
-

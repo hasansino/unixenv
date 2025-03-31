@@ -1,4 +1,3 @@
-
 # linux aliases
 
 # alias ll='ls -alFhXv'
