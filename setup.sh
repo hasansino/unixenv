@@ -26,6 +26,7 @@ update_file() {
         echo "$source" >> "$TMP_FILE"
         echo -e "\n\n" >> "$TMP_FILE"
         echo "$footer" >> "$TMP_FILE"
+        echo -e "\n" >> "$TMP_FILE"
         sed -i '' "/$header/,/$footer/d" "$target"
         cat "$TMP_FILE" >> "$target"
         rm "$TMP_FILE"

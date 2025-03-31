@@ -28,7 +28,9 @@ dcrb() {
 }
 
 # golang
-goenv() { source goenv-scp "$1" "$2" }
+goenv() { 
+    source goenv-scp "$1" "$2" 
+}
 alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
 
