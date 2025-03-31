@@ -13,8 +13,8 @@ else
 fi
 
 update_file() {
-    local header="╔════════════════════ [ UNIXENV CONFIG START ] ════════════════════╗"
-    local footer="╚════════════════════ [ UNIXENV CONFIG END   ] ════════════════════╝"
+    local header="# ╔════════════════════ [ UNIXENV CONFIG START ] ════════════════════╗"
+    local footer="# ╚════════════════════ [ UNIXENV CONFIG END   ] ════════════════════╝"
     local source="$1"
     local target="$2"
 
