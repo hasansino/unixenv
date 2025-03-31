@@ -24,7 +24,7 @@ update_file() {
         TMP_FILE=$(mktemp)
         echo "$header" > "$TMP_FILE"
         echo "$source" >> "$TMP_FILE"
-        echo -e "\n" >> "$TMP_FILE"
+        echo -e "\n\n" >> "$TMP_FILE"
         echo "$footer" >> "$TMP_FILE"
         sed -i '' "/$header/,/$footer/d" "$target"
         cat "$TMP_FILE" >> "$target"
