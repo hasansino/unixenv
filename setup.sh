@@ -113,12 +113,16 @@ elif [[ -f /etc/debian_version ]]; then
     update-alternatives --install /usr/bin/editor editor /usr/bin/nano 100
     update-alternatives --set editor /usr/bin/nano
     # packages - eza
-    apt install -q -y gpg
-    mkdir -p /etc/apt/keyrings
-    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
-    chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-    apt update
+    gpg_key="/etc/apt/keyrings/gierens.gpg"
+    source_list="/etc/apt/sources.list.d/gierens.list"
+    if ! [ -f "$gpg_key" ] && ! [ -f "$source_list" ]; then
+        apt install -q -y gpg
+        mkdir -p /etc/apt/keyrings
+        wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --batch --dearmor -o /etc/apt/keyrings/gierens.gpg
+        echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
+        chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+        apt update
+    fi
     apt install -q -y eza
     #packages - broot
     wget https://dystroy.org/broot/download/x86_64-linux/broot
