@@ -7,5 +7,3 @@ if [ -f ~/.zsh_aliases ]; then
 fi
 
 eval "$(zoxide init zsh)"
-
-source $HOME/.config/broot/launcher/bash/br

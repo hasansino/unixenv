@@ -52,7 +52,7 @@ app_configs() {
 binaries() {
     # alias `goenv`
     if [ ! -L "/usr/local/bin/goenv-scp" ]; then
-        ln -s "$(pwd)/bin/goenv-scp" /usr/local/bin/goenv-scp
+        ln -s "$CLONE_DIR/bin/goenv-scp" /usr/local/bin/goenv-scp
     fi
 }
 
@@ -67,9 +67,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # .zprofile
     update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
     # .zshrc
-    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/macos/.zshrc")" "$HOME/.zshrc"
+    update_file "$(cat "$CLONE_DIR/macos/.zshrc" "$CLONE_DIR/generic/rc")" "$HOME/.zshrc"
     # .zsh_aliases
-    update_file "$(cat "$CLONE_DIR/generic/aliases" "$CLONE_DIR/macos/.zsh_aliases")" "$HOME/.zsh_aliases"   
+    update_file "$(cat "$CLONE_DIR/macos/.zsh_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.zsh_aliases"   
 
     # packages
     brew install wget watch nano htop
@@ -88,9 +88,9 @@ elif [[ -f /etc/debian_version ]]; then
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
     # .bashrc 
-    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/linux/.bashrc")" "$HOME/.bashrc"
+    update_file "$(cat "$CLONE_DIR/linux/.bashrc" "$CLONE_DIR/generic/rc")" "$HOME/.bashrc"
     # .bash_aliases
-    update_file "$(cat "$CLONE_DIR/generic/aliases" "$CLONE_DIR/linux/.bash_aliases")" "$HOME/.bash_aliases"
+    update_file "$(cat "$CLONE_DIR/linux/.bash_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.bash_aliases"
 
     # packages
     apt update
@@ -132,3 +132,5 @@ else
     echo "Unsupported OS type."
     exit 1
 fi
+
+echo "Finished."
