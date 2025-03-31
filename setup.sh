@@ -72,8 +72,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     update_file "$(cat "$CLONE_DIR/generic/aliases" "$CLONE_DIR/macos/.zsh_aliases")" "$HOME/.zsh_aliases"   
 
     # packages
-    brew -q install wget curl watch nano htop
-    brew -q install gotop zoxide fzf eza bat broot
+    brew install wget watch nano htop
+    brew install gotop zoxide fzf eza bat broot
 
     app_configs
     binaries
@@ -86,13 +86,11 @@ elif [[ -f /etc/debian_version ]]; then
     fi
 
     # .bash_profile
-    update_file "$CLONE_DIR/linux/.bash_profile" "$HOME/.bash_profile"
-    # .bashrc
-    update_file "$CLONE_DIR/generic/rc" "$HOME/.bashrc"
-    update_file "$CLONE_DIR/linux/.bashrc" "$HOME/.bashrc"
+    update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
+    # .bashrc 
+    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/linux/.bashrc")" "$HOME/.bashrc"
     # .bash_aliases
-    update_file "$CLONE_DIR/generic/aliases" "$HOME/.bash_aliases"
-    update_file "$CLONE_DIR/linux/.bash_aliases" "$HOME/.bash_aliases"
+    update_file "$(cat "$CLONE_DIR/generic/aliases" "$CLONE_DIR/linux/.bash_aliases")" "$HOME/.bash_aliases"
 
     # packages
     apt update
