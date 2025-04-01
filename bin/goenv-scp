@@ -6,7 +6,7 @@
 #   $2 - golang version in {major.minor.patch} fromat
 #
 # If version does not exist in $1/gosdk/go{version}, it will be downloaded and extracted.
-# Automatically detects linux / darwin and architecture, choosing corect link from https://go.dev/dl.
+# Automatically detects os (linux/darwin) and architecture, choosing corect link from https://go.dev/dl.
 #
 # Exports GOROOT to $1/gosdk/go$2
 # Exports GOPATH to $1/gopath
@@ -57,7 +57,7 @@ find_go_download() {
         echo "Auto-detected architecture: $target_arch" >&2
     fi
 
-    json_data=$(curl -s "https://go.dev/dl/?mode=json&include=all")
+    json_data=$(curl -s "$download_url/?mode=json&include=all")
 
     local file_info=$(echo "$json_data" | jq -r --arg v "go$version" --arg os "$os_type" --arg arch "$target_arch" \
         '.[] | select(.version == $v) | .files[] | select(.os == $os and .arch == $arch and .kind == "archive")')

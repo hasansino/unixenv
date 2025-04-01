@@ -19,25 +19,33 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
 update_file() {
-    local header="# >>>>>>>>>>>>>>>>>>>>>> [ UNIXENV CONFIG START ] <<<<<<<<<<<<<<<<<<<<<"
-    local footer="# >>>>>>>>>>>>>>>>>>>>>> [ UNIXENV CONFIG END   ] <<<<<<<<<<<<<<<<<<<<<"
+    local header="#_____UNIXENV_CONFIG_START____"
+    local footer="#_____UNIXENV_CONFIG_END______"
     local source="$1"
     local target="$2"
 
+    local escaped_header=$(printf '%s\n' "$header" | sed 's/[][\\/.^$*]/\\&/g')
+    local escaped_footer=$(printf '%s\n' "$footer" | sed 's/[][\\/.^$*]/\\&/g')
+
     if [ ! -f "$target" ]; then
-        echo -e "$header\n$source\n$footer" > "$target"
+        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$target"
     elif grep -q "$header" "$target" && grep -q "$footer" "$target"; then
         TMP_FILE=$(mktemp)
-        echo "$header" > "$TMP_FILE"
-        echo "$source" >> "$TMP_FILE"
-        echo -e "\n\n" >> "$TMP_FILE"
-        echo "$footer" >> "$TMP_FILE"
-        echo -e "\n" >> "$TMP_FILE"
-        sed -i '' "/$header/,/$footer/d" "$target"
+        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$TMP_FILE" #Removed extra newlines
+        
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            sed -i '' "/$escaped_header/,/$escaped_footer/d" "$target"
+        elif [[ "$(uname -s)" == "Linux" ]]; then
+            sed -i "/$escaped_header/,/$escaped_footer/d" "$target"
+        else
+            echo "Unsupported operating system."
+            return 1
+        fi
+
         cat "$TMP_FILE" >> "$target"
         rm "$TMP_FILE"
     else
-        echo -e "\n$header\n$source\n$footer" >> "$target"
+        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" >> "$target"
     fi
 }
 
