@@ -2,6 +2,8 @@
 # generic rc
 # executed every time an interactive shell is started
 
+# export QT_SCALE_FACTOR=2.0
+
 export EDITOR=nano
 export VISUAL=nano
 
@@ -9,6 +11,7 @@ export EZA_CONFIG_DIR="$HOME/.config/eza"
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
 
 goenv /opt 1.24.1
+go telemetry off
 
 source $HOME/.config/broot/launcher/bash/br
 
