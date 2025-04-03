@@ -68,15 +68,6 @@ update_file() {
 }
 
 packages() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-         
-    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-        
-    else
-        echo "Unsupported operating system."
-        return 1
-    fi
-
     brew install ca-certificates
     brew install wget nano htop watch
     brew install gotop zoxide fzf eza bat broot
@@ -119,11 +110,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     scripts
 
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    echo "OS: linux"
-
-    if [ "$EUID" -ne 0 ]; then
-      echo "Please run as root to install packages"
-    fi
+    echo "OS: linux"    
 
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
