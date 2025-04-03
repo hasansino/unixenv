@@ -3,6 +3,18 @@
 set -e
 # set -x
 
+# check for homebrew
+if ! type brew >/dev/null 2>&1; then
+    echo "Homebrew is required, but not installed."
+    exit 1
+fi
+
+# check for git
+if ! type git > /dev/null 2>&1; then
+    echo "Git is required, but not installed."
+    exit 1
+fi
+
 # clone or update remote repository
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
@@ -33,9 +45,9 @@ update_file() {
         TMP_FILE=$(mktemp)
         printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$TMP_FILE" #Removed extra newlines
         
-        if [[ "$(uname -s)" == "Darwin" ]]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
             sed -i '' "/$escaped_header/,/$escaped_footer/d" "$target"
-        elif [[ "$(uname -s)" == "Linux" ]]; then
+        elif [[ "$OSTYPE" == "linux-gnu" ]]; then
             sed -i "/$escaped_header/,/$escaped_footer/d" "$target"
         else
             echo "Unsupported operating system."
@@ -49,7 +61,22 @@ update_file() {
     fi
 }
 
-app_configs() {
+packages() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+         
+    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+        
+    else
+        echo "Unsupported operating system."
+        return 1
+    fi
+
+    brew install ca-certificates
+    brew install wget nano htop watch
+    brew install gotop zoxide fzf eza bat broot
+}
+
+configs() {
     # nano
     mkdir -p "/tmp/.cache/nano"
     cp "$CLONE_DIR/generic/app_configs/.nanorc" "$HOME/.nanorc"
@@ -64,7 +91,7 @@ app_configs() {
     cp "$CLONE_DIR/generic/app_configs/eza.theme.yml" "$HOME/.config/eza/theme.yml"
 }
 
-binaries() {
+scripts() {
     # alias `goenv`
     if [ ! -L "/usr/local/bin/goenv-scp" ]; then
         ln -s "$CLONE_DIR/bin/goenv-scp" /usr/local/bin/goenv-scp
@@ -74,11 +101,6 @@ binaries() {
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "OS: darwin"
 
-    # check for homebrew
-    if ! type brew >/dev/null 2>&1; then
-        echo "Homebrew is not installed. Please install Homebrew first."
-    fi
-
     # .zprofile
     update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
     # .zshrc
@@ -86,15 +108,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # .zsh_aliases
     update_file "$(cat "$CLONE_DIR/macos/.zsh_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.zsh_aliases"   
 
-    # packages
-    brew install wget watch nano htop
-    brew install gotop zoxide fzf eza bat broot
+    packages
+    configs
+    scripts
 
-    app_configs
-    binaries
-
-elif [[ -f /etc/debian_version ]]; then
-    echo "OS: debian"
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    echo "OS: linux"
 
     if [ "$EUID" -ne 0 ]; then
       echo "Please run as root to install packages"
@@ -107,44 +126,9 @@ elif [[ -f /etc/debian_version ]]; then
     # .bash_aliases
     update_file "$(cat "$CLONE_DIR/linux/.bash_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.bash_aliases"
 
-    # packages
-    apt update
-    apt install -q -y wget curl watch build-essential htop
-    apt install -q -y zoxide fzf bat
-    # packages - gotop
-    wget https://github.com/xxxserxxx/gotop/releases/latest/download/gotop_v4.2.0_linux_amd64.deb
-    dpkg -i gotop_v4.2.0_linux_amd64.deb || apt install -f -y
-    # packages - nano 
-    apt install -q -y libncurses-dev
-    wget https://ftp.gnu.org/gnu/nano/nano-8.3.tar.gz
-    tar -xf nano-8.3.tar.gz
-    cd nano-8.3
-    ./configure --prefix=/usr
-    make
-    make install
-    nano --version
-    update-alternatives --install /usr/bin/editor editor /usr/bin/nano 100
-    update-alternatives --set editor /usr/bin/nano
-    # packages - eza
-    gpg_key="/etc/apt/keyrings/gierens.gpg"
-    source_list="/etc/apt/sources.list.d/gierens.list"
-    if ! [ -f "$gpg_key" ] && ! [ -f "$source_list" ]; then
-        apt install -q -y gpg
-        mkdir -p /etc/apt/keyrings
-        wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --batch --dearmor -o /etc/apt/keyrings/gierens.gpg
-        echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
-        chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-        apt update
-    fi
-    apt install -q -y eza
-    #packages - broot
-    wget https://dystroy.org/broot/download/x86_64-linux/broot
-    chmod +x broot
-    mv broot /usr/local/bin/
-    # ---
-
-    app_configs
-    binaries
+    packages
+    configs
+    scripts
 else
     echo "Unsupported OS type."
     exit 1

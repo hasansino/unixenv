@@ -7,8 +7,11 @@
 export EDITOR=nano
 export VISUAL=nano
 
-export EZA_CONFIG_DIR="$HOME/.config/eza"
+export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_ANALYTICS=1
+
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
+export EZA_CONFIG_DIR="$HOME/.config/eza"
 
 goenv /opt 1.24.1
 go telemetry off
