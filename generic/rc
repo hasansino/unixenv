@@ -7,8 +7,9 @@
 export EDITOR=nano
 export VISUAL=nano
 
-export HOMEBREW_NO_ENV_HINTS=1
+# "The cure for boredom is curiosity. There is no cure for curiosity."
 export HOMEBREW_NO_ANALYTICS=1
+export HOMEBREW_NO_ENV_HINTS=1
 
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
 export EZA_CONFIG_DIR="$HOME/.config/eza"
