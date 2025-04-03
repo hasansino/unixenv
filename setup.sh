@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Prerequisites: homebrew & git
+# Extra prerequisites for linux: build-essential procps curl file
+#
+# Install homebrew:
+# `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
 set -e
 # set -x
 
