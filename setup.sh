@@ -70,7 +70,7 @@ update_file() {
 packages() {
     brew install ca-certificates
     brew install wget nano htop watch
-    brew install gotop zoxide fzf eza bat broot
+    brew install gotop bottom zoxide fzf eza bat broot navi dust
 }
 
 configs() {

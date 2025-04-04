@@ -13,3 +13,4 @@ if type brew &>/dev/null; then
 fi
 
 eval "$(zoxide init zsh)"
+eval "$(navi widget zsh)"
