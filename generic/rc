@@ -2,6 +2,8 @@
 # generic rc
 # executed every time an interactive shell is started
 
+# goenv /opt 1.24.1                                                                                                                                    # go telemetry off
+
 # export QT_SCALE_FACTOR=2.0
 
 export EDITOR=nano
@@ -13,9 +15,6 @@ export HOMEBREW_NO_ENV_HINTS=1
 
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
 export EZA_CONFIG_DIR="$HOME/.config/eza"
-
-goenv /opt 1.24.1
-go telemetry off
 
 source $HOME/.config/broot/launcher/bash/br
 
