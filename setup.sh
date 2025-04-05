@@ -11,13 +11,13 @@ set -e
 
 # check for homebrew
 if ! type brew >/dev/null 2>&1; then
-    echo "Homebrew is required, but not installed."
+    echo "Error: homebrew is required, but not installed."
     exit 1
 fi
 
 # check for git
 if ! type git > /dev/null 2>&1; then
-    echo "Git is required, but not installed."
+    echo "Error: git is required, but not installed."
     exit 1
 fi
 
@@ -69,23 +69,23 @@ update_file() {
 
 packages() {
     brew install ca-certificates
-    brew install wget nano htop watch
+    brew install wget nano htop watch unzip
     brew install gotop bottom zoxide fzf eza bat broot navi dust
 }
 
 configs() {
     # nano
     mkdir -p "/tmp/.cache/nano"
-    cp "$CLONE_DIR/generic/app_configs/.nanorc" "$HOME/.nanorc"
+    cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
     # git
-    cp "$CLONE_DIR/generic/app_configs/.gitconfig" "$HOME/.gitconfig"
-    cp "$CLONE_DIR/generic/app_configs/.gitignore" "$HOME/.gitignore"
+    cp "$CLONE_DIR/generic/.config/.gitconfig" "$HOME/.gitconfig"
+    cp "$CLONE_DIR/generic/.config/.gitignore" "$HOME/.gitignore"
     # htop
     mkdir -p "$HOME/.config/htop"
-    cp "$CLONE_DIR/generic/app_configs/htoprc" "$HOME/.config/htop/htoprc"
+    cp "$CLONE_DIR/generic/.config/htoprc" "$HOME/.config/htop/htoprc"
     # eza
     mkdir -p "$HOME/.config/eza"
-    cp "$CLONE_DIR/generic/app_configs/eza.theme.yml" "$HOME/.config/eza/theme.yml"
+    cp "$CLONE_DIR/generic/.config/eza.theme.yml" "$HOME/.config/eza/theme.yml"
 }
 
 scripts() {
