@@ -90,8 +90,9 @@ configs() {
 
 scripts() {
     # alias `goenv`
-    if [ ! -L "/usr/local/bin/goenv-scp" ]; then
-        ln -s "$CLONE_DIR/bin/goenv-scp" /usr/local/bin/goenv-scp
+    if [ ! -L "$HOME/.local/bin/goenv-scp" ]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
     fi
 }
 

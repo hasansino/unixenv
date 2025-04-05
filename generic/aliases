@@ -8,6 +8,7 @@ alias xx="exit"
 alias c='clear'
 
 # utilities
+alias bat="bat -p --theme OneHalfDark"
 alias cnt="ls | wc -l"
 
 # git
