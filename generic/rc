@@ -2,10 +2,12 @@
 # generic rc
 # executed every time an interactive shell is started
 
-# goenv /opt 1.24.1                                                                                                                                    # go telemetry off
-
 # export QT_SCALE_FACTOR=2.0
 
+# goenv /opt 1.24.1                                                                                                                                    # go telemetry off
+# go telemetry off
+
+mkdir -p /tmp/.cache/nano
 export EDITOR=nano
 export VISUAL=nano
 

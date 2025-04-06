@@ -6,6 +6,8 @@
         autocorrect = 1
 [core]
         excludesfile = ~/.gitignore
+        editor = nano
+        autocrlf = input
 [credential]
         helper = store
 [commit]
@@ -22,3 +24,10 @@
         rebase = false
 [color]
         ui = auto
+[column]
+        ui = auto
+[rerere]
+        enabled = true
+[rebase]
+        autosquash = true
+        autostash = true
