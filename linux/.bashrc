@@ -18,3 +18,5 @@ fi
 
 eval "$(zoxide init bash)"
 eval "$(navi widget bash)"
+
+export GPG_TTY=$(tty)
