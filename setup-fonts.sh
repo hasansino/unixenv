@@ -6,8 +6,11 @@ set -e
 # operate in temporary directory
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
 
-# Font URL
 FONT_URL="https://github.com/microsoft/cascadia-code/releases/download/v2407.24/CascadiaCode-2407.24.zip"
 FONT_NAME="Cascadia Code"
 ZIP_FILE="CascadiaCode.zip"
@@ -41,7 +44,5 @@ else
 fi
 
 echo "Successfully installed $FONT_NAME!"
-
-rm -rf "$TMP_DIR"
 
 echo "Finished."

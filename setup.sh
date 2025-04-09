@@ -1,13 +1,19 @@
 #!/bin/bash
 
-# Prerequisites: homebrew & git
-# Extra prerequisites for linux: build-essential procps curl file
+# Prerequisites: git & homebrew
 #
 # Install homebrew:
 # `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+# + sudo apt-get install build-essential procps curl file
 
 set -e
 # set -x
+
+# do not allow root
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Error: running from root is not allowed."
+    exit 1
+fi
 
 # check for homebrew
 if ! type brew >/dev/null 2>&1; then
@@ -35,6 +41,10 @@ fi
 # operate in temporary directory
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
 
 update_file() {
     local header="#_____UNIXENV_CONFIG_START____"
@@ -128,7 +138,5 @@ else
     echo "Unsupported OS type."
     exit 1
 fi
-
-rm -rf "$TMP_DIR"
 
 echo "Finished."
