@@ -75,11 +75,12 @@ packages() {
 
 configs() {
     # nano
-    mkdir -p "/tmp/.cache/nano"
     cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
     # git
     cp "$CLONE_DIR/generic/.config/.gitconfig" "$HOME/.gitconfig"
     cp "$CLONE_DIR/generic/.config/.gitignore" "$HOME/.gitignore"
+    # btm
+    cp "$CLONE_DIR/generic/.config/btm.toml" "$HOME/.config/btm.toml"
     # htop
     mkdir -p "$HOME/.config/htop"
     cp "$CLONE_DIR/generic/.config/htoprc" "$HOME/.config/htop/htoprc"

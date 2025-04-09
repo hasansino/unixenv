@@ -10,6 +10,7 @@ alias c='clear'
 # utilities
 alias bat="bat -p --theme OneHalfDark"
 alias cnt="ls | wc -l"
+alias btm="btm -C ~/.config/btm.toml --autohide_time"
 
 # git
 alias gs='git status'
