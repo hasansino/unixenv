@@ -1,33 +1,42 @@
 [user]
-        name = hasansino
-        email = 4024450+hasansino@users.noreply.github.com
-        signingkey = 3280B0F350525F90
+name = hasansino
+email = 4024450+hasansino@users.noreply.github.com
+
 [help]
-        autocorrect = 1
+autocorrect = 1
+
 [core]
-        excludesfile = ~/.gitignore
-        editor = nano
-        autocrlf = input
+excludesfile = ~/.gitignore
+editor = nano
+autocrlf = input
+
 [credential]
-        helper = store
-[commit]
-        gpgsign = true
-[gpg]
-        program = /usr/local/bin/gpg
+helper = cache
+
 [tag]
-        forceSignAnnotated = true
+forceSignAnnotated = true
+
 [init]
-        defaultBranch = master
+defaultBranch = master
+
 [push]
-        default = current
+default = current
+
 [pull]
-        rebase = false
+rebase = false
+
 [color]
-        ui = auto
+ui = auto
+
 [column]
-        ui = auto
+ui = auto
+
 [rerere]
-        enabled = true
+enabled = true
+
 [rebase]
-        autosquash = true
-        autostash = true
+autosquash = true
+autostash = true
+
+[include]
+path = ~/.gitconfig.local

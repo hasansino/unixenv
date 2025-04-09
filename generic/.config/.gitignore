@@ -1,5 +1,2 @@
-# os specific
 .DS_Store
-
-# ide specific
 .idea
