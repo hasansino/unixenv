@@ -31,6 +31,10 @@ dcrb() {
         docker compose stop "$@" && docker compose rm -vf "$@" && docker compose up -d "$@" && docker compose logs -f "$@"
     fi
 }
+dnet() {
+    local container_name="$(docker ps -a --format '{{.Names}}' | grep "$1")"
+    docker run -it --net container:$container_name nicolaka/netshoot iftop -bP
+}
 
 # golang
 goenv() { 
