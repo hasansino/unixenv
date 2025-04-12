@@ -5,8 +5,6 @@
 # Install homebrew:
 # `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 # + sudo apt-get install build-essential procps curl file
-#
-# auto-update tes
 
 set -e
 # set -x
