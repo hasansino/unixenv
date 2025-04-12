@@ -80,7 +80,8 @@ update_file() {
 packages() {
     brew install ca-certificates
     brew install wget nano htop watch unzip
-    brew install gotop bottom zoxide fzf eza bat broot navi dust
+    brew install zoxide fzf eza bat broot navi dust
+    brew install lazydocker gotop bottom
 }
 
 configs() {
