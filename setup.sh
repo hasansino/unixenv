@@ -9,25 +9,56 @@
 set -e
 # set -x
 
-# do not allow root
 if [ "$(id -u)" -eq 0 ]; then
     echo "Error: running from root is not allowed."
     exit 1
 fi
-
-# check for homebrew
 if ! type brew >/dev/null 2>&1; then
     echo "Error: homebrew is required, but not installed."
     exit 1
 fi
-
-# check for git
 if ! type git > /dev/null 2>&1; then
     echo "Error: git is required, but not installed."
     exit 1
 fi
 
-# clone or update remote repository
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "OS: darwin"
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    echo "OS: linux" 
+else
+    echo "Unsupported OS."
+    exit 1
+fi
+
+# --- AUTOUPDATE ---
+get_script_path() {
+    local source="${BASH_SOURCE[0]}"
+    while [ -h "$source" ]; do
+        local dir="$( cd -P "$( dirname "$source" )" && pwd )"
+        source="$(readlink "$source")"
+        [[ $source != /* ]] && source="$dir/$source"
+    done
+    echo "$( cd -P "$( dirname "$source" )" && pwd )/$( basename "$source" )"
+}
+get_checksum() {
+    local file_path="$1"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        md5 -q "$file_path"
+    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+        md5sum "$file_path" | awk '{ print $1 }'
+    fi
+}
+
+SCRIPT_PATH=$(get_script_path)
+echo "Script path: $SCRIPT_PATH"
+if [ ! -f "$SCRIPT_PATH" ]; then
+    echo "Error: script not found."
+    exit 1
+fi
+OLD_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
+echo "Old checksum: $OLD_CHECKSUM"
+
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
 if [ -d "$CLONE_DIR" ]; then
@@ -37,6 +68,14 @@ else
     echo "Cloning git repo..."
     git clone "$REPO_URL" "$CLONE_DIR"
 fi
+
+NEW_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
+echo "New checksum: $NEW_CHECKSUM"
+if [ "$OLD_CHECKSUM" != "$NEW_CHECKSUM" ]; then
+    echo "Script has been updated. Restarting..."
+    exec "$SCRIPT_PATH" "$@"
+fi
+# --- AUTOUPDATE END ---
 
 # operate in temporary directory
 TMP_DIR=$(mktemp -d)
@@ -65,9 +104,6 @@ update_file() {
             sed -i '' "/$escaped_header/,/$escaped_footer/d" "$target"
         elif [[ "$OSTYPE" == "linux-gnu" ]]; then
             sed -i "/$escaped_header/,/$escaped_footer/d" "$target"
-        else
-            echo "Unsupported operating system."
-            return 1
         fi
 
         cat "$TMP_FILE" >> "$target"
@@ -81,7 +117,7 @@ packages() {
     brew install ca-certificates
     brew install wget nano htop watch unzip
     brew install zoxide fzf eza bat broot navi dust
-    brew install lazydocker gotop bottom
+    brew install gotop bottom lazydocker
 }
 
 configs() {
@@ -109,8 +145,6 @@ scripts() {
 }
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "OS: darwin"
-
     # .zprofile
     update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
     # .zshrc
@@ -121,10 +155,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     packages
     configs
     scripts
-
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    echo "OS: linux"    
-
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
     # .bashrc 
@@ -135,9 +166,6 @@ elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     packages
     configs
     scripts
-else
-    echo "Unsupported OS type."
-    exit 1
 fi
 
 echo "Finished."
