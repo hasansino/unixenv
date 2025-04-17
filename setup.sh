@@ -118,6 +118,8 @@ packages() {
     brew install wget nano htop watch unzip
     brew install zoxide fzf eza bat broot navi dust
     brew install gotop bottom lazydocker
+    brew install uv hyperfine
+    uv tool install -U --python 3.13 posting
 }
 
 configs() {
