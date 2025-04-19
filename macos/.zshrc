@@ -14,3 +14,5 @@ fi
 
 eval "$(zoxide init zsh)"
 eval "$(navi widget zsh)"
+
+PROMPT='%1~ $ '
