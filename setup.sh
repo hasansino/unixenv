@@ -136,6 +136,8 @@ configs() {
     # eza
     mkdir -p "$HOME/.config/eza"
     cp "$CLONE_DIR/generic/.config/eza.theme.yml" "$HOME/.config/eza/theme.yml"
+    # generic
+    touch "~/.hushlogin"
 }
 
 scripts() {
