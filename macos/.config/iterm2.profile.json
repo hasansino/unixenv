@@ -84,18 +84,18 @@
       "Text" : "6D1C8FBE-C9AE-4DC8-B1A7-7044BC6C26BE",
       "Escaping" : 2
     },
-    "0xf703-0x320000-0x7c" : {
-      "Version" : 2,
-      "Apply Mode" : 0,
-      "Action" : 29,
-      "Text" : "6D1C8FBE-C9AE-4DC8-B1A7-7044BC6C26BE",
-      "Escaping" : 2
-    },
     "0x6b-0x100000-0x28" : {
       "Version" : 2,
       "Apply Mode" : 0,
       "Action" : 13,
       "Text" : "",
+      "Escaping" : 2
+    },
+    "0xf703-0x320000-0x7c" : {
+      "Version" : 2,
+      "Apply Mode" : 0,
+      "Action" : 29,
+      "Text" : "6D1C8FBE-C9AE-4DC8-B1A7-7044BC6C26BE",
       "Escaping" : 2
     },
     "0xf701-0x320000-0x7d" : {
