@@ -127,7 +127,7 @@ configs() {
     if [ ! -L "$HOME/.ssh" ]; then
         mkdir -p "$HOME/.ssh"
     fi
-    cp "$CLONE_DIR/generic/ssh" "$HOME/.ssh/config"
+    cp "$CLONE_DIR/generic/.config/ssh" "$HOME/.ssh/config"
     touch "$HOME/.ssh/config_hosts"
     # nano
     cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
