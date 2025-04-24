@@ -123,6 +123,12 @@ packages() {
 }
 
 configs() {
+    # ssh
+    if [ ! -L "$HOME/.ssh" ]; then
+        mkdir -p "$HOME/.ssh"
+    fi
+    cp "$CLONE_DIR/generic/ssh" "$HOME/.ssh/config"
+    touch "$HOME/.ssh/config_hosts"
     # nano
     cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
     # git
@@ -137,15 +143,15 @@ configs() {
     mkdir -p "$HOME/.config/eza"
     cp "$CLONE_DIR/generic/.config/eza.theme.yml" "$HOME/.config/eza/theme.yml"
     # generic
-    touch "~/.hushlogin"
+    touch "$HOME/.hushlogin"
 }
 
 scripts() {
     # alias `goenv`
     if [ ! -L "$HOME/.local/bin/goenv-scp" ]; then
         mkdir -p "$HOME/.local/bin"
-        ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
     fi
+    ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
 }
 
 if [[ "$OSTYPE" == "darwin"* ]]; then

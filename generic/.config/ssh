@@ -1,0 +1,13 @@
+TCPKeepAlive yes
+ServerAliveInterval 60
+ServerAliveCountMax 3
+ConnectTimeout 10
+Compression yes
+StrictHostKeyChecking no
+LogLevel VERBOSE
+
+Host *
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+
+Include config_hosts
