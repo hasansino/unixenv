@@ -10,6 +10,7 @@
 #
 # Exports GOROOT to $1/gosdk/go$2
 # Exports GOPATH to $1/gopath
+# Exports GOCACHE to $1/gocache
 
 is_valid_version() {
     local version="$1"
@@ -149,8 +150,10 @@ fi
 
 export GOROOT="${ROOT_DIR}/gosdk/${SDK}"
 export GOPATH="${ROOT_DIR}/gopath"
+export GOCACHE="${ROOT_DIR}/gocache"
 export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
 
 echo "GOSDK: ${SDK}"
 echo "GOROOT: ${GOROOT}"
 echo "GOPATH: ${GOPATH}"
+echo "GOCACHE: ${GOCACHE}"
