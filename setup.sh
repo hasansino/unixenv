@@ -147,11 +147,13 @@ configs() {
 }
 
 scripts() {
-    # alias `goenv`
-    if [ ! -L "$HOME/.local/bin/goenv-scp" ]; then
+    if [ ! -d "$HOME/.local/bin" ]; then
         mkdir -p "$HOME/.local/bin"
     fi
-    ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
+    # alias `goenv`
+    if [ ! -L "$HOME/.local/bin/goenv-scp" ]; then
+        ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
+    fi
 }
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
