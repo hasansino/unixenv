@@ -3,3 +3,4 @@
 _Makefile
 _docker-compose.yml
 **/.claude/
+**/CLAUDE.local.md
