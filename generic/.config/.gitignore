@@ -2,3 +2,4 @@
 .idea
 _Makefile
 _docker-compose.yml
+**/.claude/
