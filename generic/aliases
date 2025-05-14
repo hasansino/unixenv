@@ -13,11 +13,27 @@ alias cnt="ls | wc -l"
 alias btm="btm -C ~/.config/btm.toml --autohide_time"
 alias hf="hyperfine --warmup 3 --shell bash"
 
+make() {
+    if [ -f "_Makefile" ]; then
+        echo "Using _Makefile"
+        command make -f _Makefile "$@"
+    else
+        command make "$@"
+    fi
+}
+
 # git
 alias gs='git status'
 
 # docker
-alias dc='docker compose'
+dc() {
+    if [ -f "_docker-compose.yml" ]; then
+        echo "Using _docker-compose.yml"
+        docker compose -f _docker-compose.yml "$@"
+    else
+        docker compose "$@"
+    fi
+}
 dcr() {
     if [[ $# -eq 0 ]]; then
         docker compose stop && docker compose up -d && docker compose logs -f
