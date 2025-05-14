@@ -25,6 +25,10 @@ make() {
 # git
 alias gs='git status'
 
+gr() {
+    git rebase --autostash -i HEAD~"$@"
+}
+
 # docker
 dc() {
     if [ -f "_docker-compose.yml" ]; then
