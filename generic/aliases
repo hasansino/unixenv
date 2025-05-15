@@ -24,6 +24,7 @@ make() {
 
 # git
 alias gs='git status'
+alias gl='git log --oneline --graph --decorate'
 
 gr() {
     git rebase --autostash -i HEAD~"$@"
