@@ -1,2 +1,6 @@
 .DS_Store
 .idea
+_Makefile
+_docker-compose.yml
+**/.claude/
+**/CLAUDE.local.md
