@@ -117,7 +117,7 @@ packages() {
     brew install ca-certificates
     brew install wget nano htop watch unzip
     brew install zoxide fzf eza bat broot navi dust fd
-    brew install gotop bottom lazydocker
+    brew install gotop bottom lazydocker k9s
     brew install uv hyperfine
     uv tool install -U --python 3.13 posting
 }
