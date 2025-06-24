@@ -23,7 +23,7 @@ defaultBranch = master
 default = current
 
 [pull]
-rebase = false
+rebase = true
 
 [color]
 ui = auto
