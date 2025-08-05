@@ -116,9 +116,11 @@ update_file() {
 packages() {
     brew install ca-certificates
     brew install wget nano htop watch unzip
-    brew install zoxide fzf eza bat broot navi dust fd
-    brew install gotop bottom lazydocker
-    brew install uv hyperfine
+    brew install zoxide fzf eza bat broot navi dust fd hyperfine
+    brew install gotop bottom
+    brew install lazydocker
+    brew install kubectl k9s helm
+    brew install uv
     uv tool install -U --python 3.13 posting
 }
 

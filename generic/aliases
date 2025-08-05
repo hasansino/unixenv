@@ -60,6 +60,22 @@ dnet() {
     docker run --rm -it --net container:$container_name nicolaka/netshoot iftop -bP
 }
 
+# k8
+k() {
+    if [ -f "./.kubeconfig" ]; then
+        KUBECONFIG="./.kubeconfig" kubectl "$@"
+    else
+        kubectl "$@"
+    fi
+}
+k9s() {
+    if [ -f "./.kubeconfig" ]; then
+        KUBECONFIG="./.kubeconfig" command k9s "$@"
+    else
+        command k9s "$@"
+    fi
+}
+
 # golang
 goenv() { 
     source goenv-scp "$1" "$2" 
