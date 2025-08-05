@@ -24,6 +24,8 @@ make() {
 
 # git
 alias gs='git status'
+alias gb='git branch'
+alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 
 gr() {
