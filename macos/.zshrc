@@ -14,5 +14,6 @@ fi
 
 eval "$(zoxide init zsh)"
 eval "$(navi widget zsh)"
+eval "$(gh completion -s zsh)"
 
 PROMPT='%1~ $ '
