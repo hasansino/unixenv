@@ -120,7 +120,7 @@ packages() {
     brew install gotop bottom
     brew install lazydocker
     brew install kubectl k9s helm
-    brew install uv
+    brew install uv gh
     uv tool install -U --python 3.13 posting
 }
 
