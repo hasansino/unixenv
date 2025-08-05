@@ -114,13 +114,13 @@ update_file() {
 }
 
 packages() {
-    brew install ca-certificates
-    brew install wget nano htop watch unzip
-    brew install zoxide fzf eza bat broot navi dust fd hyperfine
-    brew install gotop bottom
-    brew install lazydocker
-    brew install kubectl k9s helm
-    brew install uv gh
+    brew install -q ca-certificates
+    brew install -q wget nano htop watch unzip
+    brew install -q zoxide fzf eza bat broot navi dust fd hyperfine
+    brew install -q gotop bottom
+    brew install -q lazydocker
+    brew install -q kubectl k9s helm
+    brew install -q uv gh
     uv tool install -U --python 3.13 posting
 }
 
