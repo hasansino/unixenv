@@ -29,6 +29,10 @@ alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 alias gpp='git pull && git push'
 
+gcm() { 
+    source gcm-scp "$1"
+}
+
 gr() {
     git rebase --autostash -i HEAD~"$@"
 }

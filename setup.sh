@@ -156,6 +156,10 @@ scripts() {
     if [ ! -L "$HOME/.local/bin/goenv-scp" ]; then
         ln -s "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
     fi
+    # alias `gcm`
+    if [ ! -L "$HOME/.local/bin/git-commit" ]; then
+        ln -s "$CLONE_DIR/bin/git-commit" "$HOME/.local/bin/git-commit"
+    fi
 }
 
 if [[ "$OSTYPE" == "darwin"* ]]; then

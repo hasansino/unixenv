@@ -1,6 +1,11 @@
 #!/bin/bash
 
+# Go Environment Setup Script
+#
 # This script is designed to be run as alias.
+#
+# Deps: curl, jq
+#
 # Example: `goenv() { source goenv-scp "$1" "$2" }`
 #   $1 - root folder for golang (GOROOT and GOPATH)
 #   $2 - golang version in {major.minor.patch} fromat
