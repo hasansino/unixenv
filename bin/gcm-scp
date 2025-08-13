@@ -6,9 +6,13 @@
 #
 # Deps: curl, jq
 
-set -euo pipefail
-
 manual_msg="${1-}"
+
+# Check if we're in a git repository
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "Error: Not in a git repository"
+  return 1
+fi
 
 git add -A
 
@@ -31,7 +35,6 @@ else
   anthropic_model="${AI_ANTHROPIC_MODEL:-claude-4-sonnet-latest}"
   openai_model="${AI_OPENAI_MODEL:-gpt-5-mini}"
 
-prompt
 prompt=$'You are an expert software engineer. Draft a concise, helpful Git commit message for the staged changes below.\n\nRules:\n- Prefer Conventional Commits (e.g., feat:, fix:, chore:, docs:, refactor:, test:, build:).\n- 1 short subject line (<= 72 chars), then optional body with wrapped bullets.\n- No code fences, no quotes around the subject, no emojis.\n- Be specific (mention files/areas and intent), but don\'t exceed a few lines.\n\nSTAGED DIFF:\n'${diff}
 
 if [[ "$agent" == "claude" ]]; then
