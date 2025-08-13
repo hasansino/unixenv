@@ -5,19 +5,19 @@
 set -euo pipefail
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
-  echo -e "${RED}Error: Not in a git repository${RESET}"
+  echo -e "Not in a git repository."
   exit 1
 fi
 
 git add -A
 
 if [[ -z "$(git diff --cached --name-only)" ]]; then
-  echo -e "${YELLOW}Nothing staged to commit.${RESET}"
+  echo -e "Nothing staged to commit."
   exit 0
 fi
 
 diff="$(git diff --cached)"
-max_chars=30000
+max_chars=50000
 if (( ${#diff} > max_chars )); then
   diff="${diff:0:max_chars}
 ... <diff truncated at ${max_chars} characters>"
@@ -42,15 +42,19 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 1
 fi
 
-claude_msg=$(claude --model claude-sonnet-4-0 -p "$prompt" 2>&1)
+claude_msg="$(claude --model claude-sonnet-4-0 -p "$prompt" 2>&1)"
 claude_exit=$?
 
 if [[ $claude_exit -ne 0 ]]; then
   echo -e "Claude Error: ${claude_msg:0:100}"
-  claude_msg=""
+  exit 1
 fi
 
-if git commit -m "$claude_msg"; then
+tmpfile="$(mktemp)"
+echo "$claude_msg" > "$tmpfile"
+
+if git commit -F "$tmpfile"; then
+  rm -f "$tmpfile"
   if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
     if git push; then
       echo -e "Push successful."
@@ -68,6 +72,7 @@ if git commit -m "$claude_msg"; then
     fi
   fi
 else
+  rm -f "$tmpfile"
   echo -e "Commit failed."
   exit 1
 fi
