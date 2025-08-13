@@ -19,3 +19,4 @@ fi
 eval "$(zoxide init bash)"
 eval "$(navi widget bash)"
 eval "$(gh completion -s bash)"
+eval "$(starship init bash)"

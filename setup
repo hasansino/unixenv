@@ -120,7 +120,7 @@ packages() {
     brew install -q gotop bottom
     brew install -q lazydocker
     brew install -q kubectl k9s helm
-    brew install -q uv gh jq
+    brew install -q uv gh jq starship
     uv tool install -U --python 3.13 posting
 }
 
@@ -208,7 +208,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # .zprofile
     update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
     # .zshrc
-    update_file "$(cat "$CLONE_DIR/macos/.zshrc" "$CLONE_DIR/generic/rc")" "$HOME/.zshrc"
+    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/macos/.zshrc")" "$HOME/.zshrc"
     # .zsh_aliases
     update_file "$(cat "$CLONE_DIR/macos/.zsh_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.zsh_aliases"   
     # modules
@@ -220,7 +220,7 @@ elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
     # .bashrc 
-    update_file "$(cat "$CLONE_DIR/linux/.bashrc" "$CLONE_DIR/generic/rc")" "$HOME/.bashrc"
+    update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/linux/.bashrc")" "$HOME/.bashrc"
     # .bash_aliases
     update_file "$(cat "$CLONE_DIR/linux/.bash_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.bash_aliases"
     # modules
