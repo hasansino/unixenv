@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Push staged changes with ai-generated commit message
+# Push staged changes with AI-generated commit message
 
 # pretty colors
 RED="\033[0;31m"
@@ -12,6 +12,13 @@ CYAN="\033[0;36m"
 RESET="\033[0m"
 
 set -euo pipefail
+
+# tidy up temp files and restore terminal even if something crashes
+tmp_prompt="$(mktemp)"
+tmp_err="$(mktemp)"
+tmp_msg="$(mktemp)"
+cleanup() { rm -f "$tmp_prompt" "$tmp_err" "$tmp_msg"; stty sane || true; }
+trap cleanup EXIT
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
   echo -e "${MAGENTA}Not in a git repository.${RESET}"
@@ -25,6 +32,7 @@ if [[ -z "$(git diff --cached --name-only)" ]]; then
   exit 0
 fi
 
+# Collect and (optionally) truncate diff to avoid overlong prompts
 diff="$(git diff --cached)"
 max_chars=50000
 if (( ${#diff} > max_chars )); then
@@ -32,8 +40,10 @@ if (( ${#diff} > max_chars )); then
 ... <diff truncated at ${max_chars} characters>"
 fi
 
-prompt="
-You are an expert software engineer. 
+# Build the prompt in a temp file (avoid huge argv, prevent accidental echo on error)
+{
+  cat <<'HDR'
+You are an expert software engineer.
 Draft a concise, helpful Git commit message for the staged changes below.
 
 Rules:
@@ -44,29 +54,66 @@ Rules:
 - Return ONLY the commit message, nothing else
 
 STAGED DIFF:
-${diff}"
+HDR
+  printf '%s\n' "$diff"
+} >"$tmp_prompt"
 
 if ! command -v claude >/dev/null 2>&1; then
   echo -e "${YELLOW}Claude CLI not found.${RESET}"
   exit 1
 fi
 
-claude_msg="$(claude --model claude-sonnet-4-0 -p "$prompt" 2>&1)"
-claude_exit=$?
+# Call the CLI safely: keep stderr separate so the prompt can't leak to terminal
+claude_out=""
+claude_status=0
+if claude --help 2>/dev/null | grep -q -- '--stdin'; then
+  # Preferred: feed prompt via stdin
+  if ! claude_out="$(claude --model claude-sonnet-4-0 --stdin <"$tmp_prompt" 2>"$tmp_err")"; then
+    claude_status=$?
+  fi
+elif claude --help 2>/dev/null | grep -qE '\-p|--prompt'; then
+  # Fallback: pass as an argument (still safe because stderr is separate)
+  prompt_payload="$(cat "$tmp_prompt")"
+  if ! claude_out="$(claude --model claude-sonnet-4-0 -p "$prompt_payload" 2>"$tmp_err")"; then
+    claude_status=$?
+  fi
+else
+  # Last resort: try piping (some CLIs read stdin by default)
+  if ! claude_out="$(cat "$tmp_prompt" | claude --model claude-sonnet-4-0 2>"$tmp_err")"; then
+    claude_status=$?
+  fi
+fi
 
-if [[ $claude_exit -ne 0 ]]; then
-  echo -e "${RED}Claude Error: ${claude_msg:0:100}${RESET}"
+if (( claude_status != 0 )); then
+  err_preview="$(head -c 200 "$tmp_err" || true)"
+  echo -e "${RED}Claude error (${claude_status}).${RESET}"
+  [[ -n "$err_preview" ]] && echo -e "${RED}${err_preview}${RESET}" >&2
+  exit $claude_status
+fi
+
+# Sanitize output a bit: trim, strip accidental code fences
+commit_msg="$(printf '%s' "$claude_out" \
+  | sed 's/^\s\+//; s/\s\+$//' \
+  | sed '/^```/d; /^"""/d; s/\r$//')"
+
+if [[ -z "$commit_msg" ]]; then
+  echo -e "${RED}Empty commit message from AI.${RESET}"
   exit 1
 fi
 
-git commit -m "$claude_msg"
-if [[ $? -ne 0 ]]; then
+printf '%s\n' "$commit_msg" >"$tmp_msg"
+
+# Commit using a file to avoid quoting issues; do not echo AI output to terminal
+if ! git commit -F "$tmp_msg" >/dev/null; then
   echo -e "${RED}Commit failed.${RESET}"
   exit 1
 fi
+echo -e "${GREEN}Committed changes.${RESET}"
 
-git push -u origin "$(git rev-parse --abbrev-ref HEAD)"
-if [[ $? -ne 0 ]]; then
+# Push
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if ! git push -u origin "$branch"; then
   echo -e "${RED}Push failed.${RESET}"
   exit 1
 fi
+echo -e "${GREEN}Pushed ${CYAN}${branch}${GREEN} to origin.${RESET}"
