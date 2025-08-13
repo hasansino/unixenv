@@ -2,17 +2,26 @@
 
 # Push staged changes with ai-generated commit message
 
+# pretty colors
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+MAGENTA="\033[0;35m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+
 set -euo pipefail
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
-  echo -e "Not in a git repository."
+  echo -e "${MAGENTA}Not in a git repository.${RESET}"
   exit 1
 fi
 
 git add -A
 
 if [[ -z "$(git diff --cached --name-only)" ]]; then
-  echo -e "Nothing staged to commit."
+  echo -e "${MAGENTA}Nothing staged to commit.${RESET}"
   exit 0
 fi
 
@@ -38,7 +47,7 @@ STAGED DIFF:
 ${diff}"
 
 if ! command -v claude >/dev/null 2>&1; then
-  echo -e "Claude CLI not found."
+  echo -e "${YELLOW}Claude CLI not found.${RESET}"
   exit 1
 fi
 
@@ -46,33 +55,18 @@ claude_msg="$(claude --model claude-sonnet-4-0 -p "$prompt" 2>&1)"
 claude_exit=$?
 
 if [[ $claude_exit -ne 0 ]]; then
-  echo -e "Claude Error: ${claude_msg:0:100}"
+  echo -e "${RED}Claude Error: ${claude_msg:0:100}${RESET}"
   exit 1
 fi
 
-tmpfile="$(mktemp)"
-echo "$claude_msg" > "$tmpfile"
+git commit -m "$claude_msg"
+if [[ $? -ne 0 ]]; then
+  echo -e "${RED}Commit failed.${RESET}"
+  exit 1
+fi
 
-if git commit -F "$tmpfile"; then
-  rm -f "$tmpfile"
-  if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
-    if git push; then
-      echo -e "Push successful."
-    else
-      echo -e "Push failed."
-      exit 1
-    fi
-  else
-    branch="$(git rev-parse --abbrev-ref HEAD)"
-    if git push -u origin "$branch"; then
-      echo -e "Push successful."
-    else
-      echo -e "Push failed."
-      exit 1
-    fi
-  fi
-else
-  rm -f "$tmpfile"
-  echo -e "Commit failed."
+git push -u origin "$(git rev-parse --abbrev-ref HEAD)"
+if [[ $? -ne 0 ]]; then
+  echo -e "${RED}Push failed.${RESET}"
   exit 1
 fi
