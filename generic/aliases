@@ -1,6 +1,8 @@
 
 # generic aliases
 
+alias path="echo "$PATH" | tr ':' '\n'"
+
 # navigation
 alias ll='eza --group-directories-first --show-symlinks --header -al -s name'
 alias ..='cd ..'
@@ -28,12 +30,10 @@ alias gb='git branch'
 alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 alias gpp='git pull && git push'
-
-gcm() { 
+gcm() {
     source gcm-scp "$1"
 }
-
-gr() {
+grb() {
     git rebase --autostash -i HEAD~"$@"
 }
 

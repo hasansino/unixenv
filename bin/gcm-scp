@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-local manual_msg="${1-}"
+manual_msg="${1-}"
 
 git add -A
 
@@ -17,27 +17,25 @@ if [[ -z "$(git diff --cached --name-only)" ]]; then
   return 0
 fi
 
-local diff
 diff="$(git diff --cached --binary)"
-local max=40000
+max=40000
 if (( ${#diff} > max )); then
   diff="${diff:0:max}\n... <diff truncated>"
 fi
 
-local commit_msg
+commit_msg=""
 if [[ -n "$manual_msg" ]]; then
   commit_msg="$manual_msg"
 else
-  local agent="${GIT_AI_AGENT:-openai}"
-  local anthropic_model="${AI_ANTHROPIC_MODEL:-claude-4-sonnet-latest}"
-  local openai_model="${AI_OPENAI_MODEL:-gpt-5-mini}"
+  agent="${GIT_AI_AGENT:-openai}"
+  anthropic_model="${AI_ANTHROPIC_MODEL:-claude-4-sonnet-latest}"
+  openai_model="${AI_OPENAI_MODEL:-gpt-5-mini}"
 
-local prompt
+prompt
 prompt=$'You are an expert software engineer. Draft a concise, helpful Git commit message for the staged changes below.\n\nRules:\n- Prefer Conventional Commits (e.g., feat:, fix:, chore:, docs:, refactor:, test:, build:).\n- 1 short subject line (<= 72 chars), then optional body with wrapped bullets.\n- No code fences, no quotes around the subject, no emojis.\n- Be specific (mention files/areas and intent), but don\'t exceed a few lines.\n\nSTAGED DIFF:\n'${diff}
 
 if [[ "$agent" == "claude" ]]; then
     if [[ -n "${ANTHROPIC_API_KEY-}" ]]; then
-      local resp
       resp="$(curl -sS https://api.anthropic.com/v1/messages \
         -H "x-api-key: ${ANTHROPIC_API_KEY}" \
         -H "anthropic-version: 2023-06-01" \
@@ -46,9 +44,8 @@ if [[ "$agent" == "claude" ]]; then
               '{model:$m, max_tokens: 300, messages:[{role:"user", content:$p}], temperature:0.2}')" )" || true
       commit_msg="$(jq -r '.content[0].text // empty' <<<"$resp" 2>/dev/null || true)"
     fi
-else if [[ "$agent" == "openai" ]]; then
+elif [[ "$agent" == "openai" ]]; then
     if [[ -n "${OPENAI_API_KEY-}" ]]; then
-      local resp
       resp="$(curl -sS https://api.openai.com/v1/chat/completions \
         -H "authorization: Bearer ${OPENAI_API_KEY}" \
         -H "content-type: application/json" \
@@ -75,7 +72,6 @@ fi
 if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
   git push
 else
-  local branch
   branch="$(git rev-parse --abbrev-ref HEAD)"
   git push -u origin "$branch"
 fi

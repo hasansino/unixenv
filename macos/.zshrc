@@ -6,10 +6,11 @@ if [ -f ~/.zsh_aliases ]; then
     source ~/.zsh_aliases
 fi
 
-if type brew &>/dev/null; then
-    FPATH=$(brew --prefix)/share/zsh/site-functions:$FPATH
-    autoload -Uz compinit
-    compinit
+if [ -x /opt/homebrew/bin/brew ]; then
+  fpath=("$(brew --prefix)/share/zsh/site-functions" $fpath)
+  typeset -U fpath
+  autoload -Uz compinit
+  compinit -i
 fi
 
 eval "$(zoxide init zsh)"
