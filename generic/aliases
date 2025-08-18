@@ -30,9 +30,6 @@ alias gb='git branch'
 alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 alias gpp='git pull && git push'
-gcm() {
-    source gcm-scp "$1"
-}
 grb() {
     git rebase --autostash -i HEAD~"$@"
 }
@@ -82,8 +79,8 @@ k9s() {
 }
 
 # golang
-goenv() { 
-    source goenv-scp "$1" "$2" 
+goenv() {
+    source goenv-scp "$1" "$2"
 }
 alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'

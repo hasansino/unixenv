@@ -25,7 +25,7 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "OS: darwin"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    echo "OS: linux" 
+    echo "OS: linux"
 else
     echo "Unsupported OS."
     exit 1
@@ -99,7 +99,7 @@ update_file() {
     elif grep -q "$header" "$target" && grep -q "$footer" "$target"; then
         TMP_FILE=$(mktemp)
         printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$TMP_FILE" #Removed extra newlines
-        
+
         if [[ "$OSTYPE" == "darwin"* ]]; then
             sed -i '' "/$escaped_header/,/$escaped_footer/d" "$target"
         elif [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -154,33 +154,31 @@ scripts() {
     fi
     # alias `goenv`
     ln -sf "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
-    # alias `gcm`
-    ln -sf "$CLONE_DIR/bin/gcm-scp" "$HOME/.local/bin/gcm-scp"
 }
 
 fonts() {
     local FONT_URL="https://github.com/microsoft/cascadia-code/releases/download/v2407.24/CascadiaCode-2407.24.zip"
     local FONT_NAME="Cascadia Code"
     local ZIP_FILE="CascadiaCode.zip"
-    
+
     echo "Installing $FONT_NAME font..."
-    
+
     if ! command -v wget &> /dev/null; then
         echo "Error: wget is required for font installation."
         return 1
     fi
-    
+
     if ! command -v unzip &> /dev/null; then
         echo "Error: unzip is required for font installation."
         return 1
     fi
-    
+
     local FONT_TMP_DIR=$(mktemp -d)
     pushd "$FONT_TMP_DIR" > /dev/null
-    
+
     wget -q "$FONT_URL" -O "$ZIP_FILE"
     unzip -q "$ZIP_FILE"
-    
+
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         local FONT_DIR="$HOME/.local/share/fonts"
         mkdir -p "$FONT_DIR"
@@ -196,10 +194,10 @@ fonts() {
         rm -rf "$FONT_TMP_DIR"
         return 1
     fi
-    
+
     popd > /dev/null
     rm -rf "$FONT_TMP_DIR"
-    
+
     echo "✓ $FONT_NAME font installed successfully"
     return 0
 }
@@ -210,7 +208,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # .zshrc
     update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/macos/.zshrc")" "$HOME/.zshrc"
     # .zsh_aliases
-    update_file "$(cat "$CLONE_DIR/macos/.zsh_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.zsh_aliases"   
+    update_file "$(cat "$CLONE_DIR/macos/.zsh_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.zsh_aliases"
     # modules
     packages
     configs
@@ -219,7 +217,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
-    # .bashrc 
+    # .bashrc
     update_file "$(cat "$CLONE_DIR/generic/rc" "$CLONE_DIR/linux/.bashrc")" "$HOME/.bashrc"
     # .bash_aliases
     update_file "$(cat "$CLONE_DIR/linux/.bash_aliases" "$CLONE_DIR/generic/aliases")" "$HOME/.bash_aliases"
