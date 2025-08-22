@@ -31,7 +31,10 @@ alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 alias gpp='git pull && git push'
 grb() {
-    git rebase --autostash -i HEAD~"$@"
+    git rebase --autostash -i HEAD~"$1"
+}
+commit() {
+    go42x tool commit
 }
 
 # docker
@@ -83,7 +86,7 @@ goenv() {
     source goenv-scp "$1" "$2"
 }
 goinstall() {
-    GOPROXY=direct GOSUMDB=off go install "$@"
+    GOPROXY=direct go install "$@"
 }
 alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
