@@ -34,7 +34,7 @@ grb() {
     git rebase --autostash -i HEAD~"$1"
 }
 commit() {
-    go42x tool commit
+    go42x tool commit "$@"
 }
 
 # docker
