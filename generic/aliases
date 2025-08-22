@@ -82,6 +82,9 @@ k9s() {
 goenv() {
     source goenv-scp "$1" "$2"
 }
+goinstall() {
+    GOPROXY=direct GOSUMDB=off go install "$@"
+}
 alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
 
