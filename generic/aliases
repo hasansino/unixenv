@@ -29,7 +29,7 @@ alias gs='git status'
 alias gb='git branch'
 alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
-alias gpp='git pull && git push'
+alias gco='git checkout'
 grb() {
     git rebase --autostash -i HEAD~"$1"
 }
