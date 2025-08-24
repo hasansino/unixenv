@@ -96,3 +96,6 @@ alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'
 
 # extra
 alias gogek='docker run --rm -it -p 8888:8080 ghcr.io/hasansino/gogek:latest'
+
+# genai
+alias clauded='claude --dangerously-skip-permissions'
