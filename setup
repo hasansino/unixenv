@@ -120,7 +120,7 @@ packages() {
     brew install -q gotop bottom
     brew install -q lazydocker
     brew install -q kubectl k9s helm
-    brew install -q uv gh jq starship glow diff-so-fancy
+    brew install -q uv gh jq starship glow diff-so-fancy tig
     uv tool install -U --python 3.13 posting
 }
 
