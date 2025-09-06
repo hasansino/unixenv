@@ -121,7 +121,7 @@ packages() {
     lazydocker \
     kubectl k9s helm \
     uv gh jq starship glow diff-so-fancy tig \
-    gifski
+    gonzo
     uv tool install -U --python 3.13 posting
 }
 
