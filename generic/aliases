@@ -93,6 +93,7 @@ goenv() {
 goinstall() {
     GOPROXY=direct go install "$@"
 }
+alias goclean='go clean -cache -modcache -i -r'
 alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
 
