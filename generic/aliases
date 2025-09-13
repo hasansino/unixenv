@@ -17,8 +17,16 @@ alias hf="hyperfine --warmup 3 --shell bash"
 
 make() {
     if [ -f "_Makefile" ]; then
-        echo "Using _Makefile"
-        command make -f _Makefile "$@"
+        echo "Trying _Makefile"
+        if ! command make -f _Makefile "$@" 2> >(tee /tmp/make_err.$$ >&2); then
+            if grep -q "No rule to make target" /tmp/make_err.$$; then
+                echo "Falling back to default Makefile"
+                command make "$@"
+            else
+                return 1
+            fi
+        fi
+        rm -f /tmp/make_err.$$
     else
         command make "$@"
     fi
