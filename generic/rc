@@ -4,7 +4,7 @@
 
 # export QT_SCALE_FACTOR=2.0
 
-# goenv /opt 1.24.1
+# goenv /opt 1.25.0
 # go telemetry off
 
 mkdir -p /tmp/.cache/nano

@@ -136,7 +136,7 @@ find_or_download_go_sdk() {
 
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <root-dir> <go-version>" >&2
-    echo "Example: $0 /opt 1.23" >&2
+    echo "Example: $0 /opt 1.25.0" >&2
     exit 1
 fi
 
@@ -157,8 +157,10 @@ export GOROOT="${ROOT_DIR}/gosdk/${SDK}"
 export GOPATH="${ROOT_DIR}/gopath"
 export GOCACHE="${ROOT_DIR}/gocache"
 export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+export GOTOOLCHAIN=local
 
 echo "GOSDK: ${SDK}"
 echo "GOROOT: ${GOROOT}"
 echo "GOPATH: ${GOPATH}"
 echo "GOCACHE: ${GOCACHE}"
+echo "GOTOOLCHAIN: ${GOTOOLCHAIN}"

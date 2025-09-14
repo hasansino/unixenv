@@ -17,5 +17,3 @@ eval "$(zoxide init zsh)"
 eval "$(navi widget zsh)"
 eval "$(gh completion -s zsh)"
 eval "$(starship init zsh)"
-
-# PROMPT='%1~ $ '
