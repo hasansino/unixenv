@@ -9,6 +9,7 @@
 set -e
 # set -x
 
+# --- PREREQUISITES ---
 if [ "$(id -u)" -eq 0 ]; then
     echo "Error: running from root is not allowed."
     exit 1
@@ -30,6 +31,7 @@ else
     echo "Unsupported OS."
     exit 1
 fi
+# --- PREREQUISITES END ---
 
 # --- AUTOUPDATE ---
 get_script_path() {
@@ -85,6 +87,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# arguments
+RUN_FONTS=false
+for arg in "$@"; do
+    case "$arg" in
+        --fonts) RUN_FONTS=true ;;
+    esac
+done
+
 update_file() {
     local header="#_____UNIXENV_CONFIG_START____"
     local footer="#_____UNIXENV_CONFIG_END______"
@@ -127,10 +137,8 @@ packages() {
 
 configs() {
     # ssh
-    if [ ! -L "$HOME/.ssh" ]; then
-        mkdir -p "$HOME/.ssh"
-    fi
-    cp "$CLONE_DIR/generic/.config/ssh" "$HOME/.ssh/config"
+    mkdir -p "$HOME/.ssh"
+    cp "$CLONE_DIR/generic/.config/.ssh/config" "$HOME/.ssh/config"
     touch "$HOME/.ssh/config_hosts"
     # nano
     cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
@@ -141,18 +149,43 @@ configs() {
     cp "$CLONE_DIR/generic/.config/btm.toml" "$HOME/.config/btm.toml"
     # htop
     mkdir -p "$HOME/.config/htop"
-    cp "$CLONE_DIR/generic/.config/htoprc" "$HOME/.config/htop/htoprc"
+    cp "$CLONE_DIR/generic/.config/htop/htoprc" "$HOME/.config/htop/htoprc"
     # eza
     mkdir -p "$HOME/.config/eza"
-    cp "$CLONE_DIR/generic/.config/eza.theme.yml" "$HOME/.config/eza/theme.yml"
+    cp "$CLONE_DIR/generic/.config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
     # generic
     touch "$HOME/.hushlogin"
+    # a bit more complicated cases
+    config_docker
+}
+
+config_docker() {
+    local CONFIG_DIR="$HOME/.docker"
+    local CONFIG_FILE="$CONFIG_DIR/config.json"
+    local GENERIC_CONFIG="$CLONE_DIR/generic/.config/docker/config.json"
+
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "config_docker error: jq is required but not installed." >&2
+        return 1
+    fi
+
+    mkdir -p "$CONFIG_DIR"
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+        cp "$GENERIC_CONFIG" "$CONFIG_FILE"
+        echo "Created $CONFIG_FILE from $GENERIC_CONFIG"
+    else
+        local tmp
+        tmp=$(mktemp)
+        jq -s '.[0] * .[1]' "$CONFIG_FILE" "$GENERIC_CONFIG" > "$tmp" \
+            && cp "$CONFIG_FILE" "$CONFIG_FILE.bak" \
+            && mv "$tmp" "$CONFIG_FILE"
+        echo "Merged $GENERIC_CONFIG into $CONFIG_FILE (backup at $CONFIG_FILE.bak)"
+    fi
 }
 
 scripts() {
-    if [ ! -d "$HOME/.local/bin" ]; then
-        mkdir -p "$HOME/.local/bin"
-    fi
+    mkdir -p "$HOME/.local/bin"
     # alias `goenv`
     ln -sf "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
 }
@@ -164,17 +197,30 @@ fonts() {
 
     echo "Installing $FONT_NAME font..."
 
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if find "$HOME/.local/share/fonts" /usr/share/fonts 2>/dev/null -type f -name "*Cascadia*.ttf" | grep -q .; then
+            echo "✓ $FONT_NAME already installed"
+            return 0
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if find "$HOME/Library/Fonts" 2>/dev/null -type f -name "*Cascadia*.ttf" | grep -q .; then
+            echo "✓ $FONT_NAME already installed"
+            return 0
+        fi
+    fi
+
+    # deps
     if ! command -v wget &> /dev/null; then
         echo "Error: wget is required for font installation."
         return 1
     fi
-
     if ! command -v unzip &> /dev/null; then
         echo "Error: unzip is required for font installation."
         return 1
     fi
 
-    local FONT_TMP_DIR=$(mktemp -d)
+    local FONT_TMP_DIR
+    FONT_TMP_DIR=$(mktemp -d)
     pushd "$FONT_TMP_DIR" > /dev/null
 
     wget -q "$FONT_URL" -O "$ZIP_FILE"
@@ -184,7 +230,7 @@ fonts() {
         local FONT_DIR="$HOME/.local/share/fonts"
         mkdir -p "$FONT_DIR"
         find . -name "*.ttf" -exec cp {} "$FONT_DIR" \;
-        fc-cache -fv > /dev/null 2>&1
+        command -v fc-cache &>/dev/null && fc-cache -fv > /dev/null 2>&1
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         local FONT_DIR="$HOME/Library/Fonts"
         mkdir -p "$FONT_DIR"
@@ -214,7 +260,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     packages
     configs
     scripts
-    fonts
+    if [ "$RUN_FONTS" = true ]; then
+        fonts
+    fi
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     # .bash_profile
     update_file "$(cat "$CLONE_DIR/linux/.bash_profile")" "$HOME/.bash_profile"
@@ -226,7 +274,9 @@ elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     packages
     configs
     scripts
-    fonts
+    if [ "$RUN_FONTS" = true ]; then
+        fonts
+    fi
 fi
 
 echo "Finished."
