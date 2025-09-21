@@ -46,9 +46,9 @@ grb() {
 dc() {
     local args=("$@")
     local fmt tpl
-    if [ "${args[0]}" = "ps" ]; then
+    if [ "${args[1]}" = "ps" ]; then
         fmt="--format"
-        tpl="table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"
+        tpl="table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Name}}"
     fi
     if [ -f "_docker-compose.yml" ]; then
         echo "Using _docker-compose.yml"
