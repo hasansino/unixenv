@@ -44,16 +44,17 @@ grb() {
 
 # docker
 dc() {
-    if [ "$1" = "ps" ]; then
-        shift
+    local args=("$@")
+    local fmt tpl
+    if [ "${args[0]}" = "ps" ]; then
         fmt="--format"
         tpl="table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"
     fi
     if [ -f "_docker-compose.yml" ]; then
         echo "Using _docker-compose.yml"
-        docker compose -f _docker-compose.yml ${fmt:+$fmt} ${tpl:+$tpl} "$@"
+        docker compose -f _docker-compose.yml "${args[@]}" ${fmt:+$fmt} ${tpl:+$tpl}
     else
-        docker compose ${fmt:+$fmt} ${tpl:+$tpl} "$@"
+        docker compose "${args[@]}" ${fmt:+$fmt} ${tpl:+$tpl}
     fi
 }
 dcr() {
