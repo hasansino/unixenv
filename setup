@@ -186,8 +186,8 @@ config_docker() {
 
 scripts() {
     mkdir -p "$HOME/.local/bin"
-    # alias `goenv`
-    ln -sf "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp"
+    ln -sf "$CLONE_DIR/bin/goenv-scp" "$HOME/.local/bin/goenv-scp" # alias `goenv`
+    ln -sf "$CLONE_DIR/bin/back-opt" "$HOME/.local/bin/back-opt"
 }
 
 fonts() {

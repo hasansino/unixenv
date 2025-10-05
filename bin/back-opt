@@ -1,0 +1,16 @@
+#!/bin/bash
+
+BACKOPT_SRC="/opt"
+BACKOPT_DEST="$HOME"
+BACKOPT_DATE=$(date +"%Y%m%d_%H%M%S")
+BACKOPT_ARCHIVE="opt_backup_$BACKOPT_DATE.tar.gz"
+
+echo "Backing up $BACKOPT_SRC to $BACKOPT_DEST/$BACKOPT_ARCHIVE ..."
+tar -czf "$BACKOPT_DEST/$BACKOPT_ARCHIVE" -C / opt
+
+if [ $? -eq 0 ]; then
+  echo "Backup successful: $BACKOPT_DEST/$BACKOPT_ARCHIVE"
+else
+  echo "Backup failed!" >&2
+  exit 1
+fi
