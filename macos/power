@@ -1,0 +1,19 @@
+#!/bin/bash
+# power.sh — toggle macOS sleep behavior
+
+case "$1" in
+  on)
+    echo "⚡ Enabling performance mode (no standby/autopoweroff)"
+    sudo pmset -a standby 0
+    sudo pmset -a autopoweroff 0
+    ;;
+  off)
+    echo "🌙 Restoring power-saving defaults"
+    sudo pmset -a standby 1
+    sudo pmset -a autopoweroff 1
+    ;;
+  *)
+    echo "Usage: $0 {on|off}"
+    exit 1
+    ;;
+esac
