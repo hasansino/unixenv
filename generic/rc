@@ -29,3 +29,5 @@ z() {
     __zoxide_z "$@"
   fi
 }
+
+mkdir -p /tmp/.cache/nano
