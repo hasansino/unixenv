@@ -132,6 +132,9 @@ packages() {
     kubectl k9s helm \
     uv gh jq starship glow diff-so-fancy tig \
     gonzo tlrc
+    brew install --cask claude-code
+    brew install --cask codex
+    brew install gemini-cli
     uv tool install -U --python 3.13 posting
 }
 

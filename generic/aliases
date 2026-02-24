@@ -111,3 +111,4 @@ alias gogek='docker run --rm -it -p 8888:8080 ghcr.io/hasansino/gogek:latest'
 
 # genai
 alias clauded='claude --dangerously-skip-permissions'
+alias geminie='gemini -m gemini-3.1-pro-preview'
