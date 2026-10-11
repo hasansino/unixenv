@@ -134,7 +134,7 @@ packages() {
     gonzo tlrc
     brew install --cask claude-code
     brew install --cask codex
-    brew install gemini-cli
+    brew install --cask antigravity-cli
     uv tool install -U --python 3.13 posting
 }
 
