@@ -1,5 +1,6 @@
 # generic rc
 # executed every time an interactive shell is started
+# read by zsh (darwin) and bash (linux): no array indexing, quote every variable, shared features only
 
 # export QT_SCALE_FACTOR=2.0
 

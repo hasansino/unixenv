@@ -1,0 +1,49 @@
+# Packages installed by setup on darwin and linux.
+# @see https://docs.brew.sh/Brew-Bundle-and-Brewfile
+
+brew "ca-certificates"
+
+# basics
+brew "wget"
+brew "nano"
+brew "htop"
+brew "watch"
+brew "unzip"
+
+# shell and files
+brew "zoxide"
+brew "fzf"
+brew "eza"
+brew "bat"
+brew "broot"
+brew "navi"
+brew "dust"
+brew "fd"
+brew "hyperfine"
+
+# monitoring
+brew "gotop"
+brew "bottom"
+
+# containers
+brew "lazydocker"
+brew "kubectl"
+brew "k9s"
+brew "helm"
+
+# tools
+brew "uv"
+brew "gh"
+brew "jq"
+brew "starship"
+brew "glow"
+brew "diff-so-fancy"
+brew "tig"
+brew "gonzo"
+brew "tlrc"
+brew "nushell"
+
+# genai
+cask "claude-code"
+cask "codex"
+cask "antigravity-cli"

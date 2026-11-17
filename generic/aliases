@@ -1,4 +1,5 @@
 # generic aliases
+# read by zsh (darwin) and bash (linux): no array indexing, quote every variable, shared features only
 
 alias path='echo "$PATH" | tr ":" "\n"'
 

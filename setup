@@ -39,7 +39,7 @@ RUN_UPDATE=true
 for arg in "$@"; do
     case "$arg" in
         --fonts) RUN_FONTS=true ;;
-        --no-update) RUN_UPDATE=false ;; # use the existing clone as is (CI tests the checked-out commit)
+        --no-update) RUN_UPDATE=false ;;
     esac
 done
 # --- ARGUMENTS END ---
@@ -134,39 +134,38 @@ update_file() {
 }
 
 packages() {
-    brew install -q ca-certificates \
-        wget nano htop watch unzip \
-        zoxide fzf eza bat broot navi dust fd hyperfine \
-        gotop bottom \
-        lazydocker \
-        kubectl k9s helm \
-        uv gh jq starship glow diff-so-fancy tig \
-        gonzo tlrc nushell
-    brew install --cask claude-code
-    brew install --cask codex
-    brew install --cask antigravity-cli
+    brew bundle --file="$CLONE_DIR/etc/Brewfile"
     uv tool install -U --python 3.13 posting
+}
+
+# copy a config file, keeping the previous version as .bak when it differs
+install_config() {
+    local source="$1"
+    local target="$2"
+
+    mkdir -p "$(dirname "$target")"
+    if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
+        cp "$target" "$target.bak"
+        echo "Backed up $target to $target.bak"
+    fi
+    cp "$source" "$target"
 }
 
 configs() {
     # ssh
-    mkdir -p "$HOME/.ssh"
-    cp "$CLONE_DIR/generic/.config/.ssh/config" "$HOME/.ssh/config"
+    install_config "$CLONE_DIR/generic/.config/.ssh/config" "$HOME/.ssh/config"
     touch "$HOME/.ssh/config_hosts"
     # nano
-    cp "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
+    install_config "$CLONE_DIR/generic/.config/.nanorc" "$HOME/.nanorc"
     # git
-    cp "$CLONE_DIR/generic/.config/.gitconfig" "$HOME/.gitconfig"
-    cp "$CLONE_DIR/generic/.config/.gitignore" "$HOME/.gitignore"
+    install_config "$CLONE_DIR/generic/.config/.gitconfig" "$HOME/.gitconfig"
+    install_config "$CLONE_DIR/generic/.config/.gitignore" "$HOME/.gitignore"
     # btm
-    mkdir -p "$HOME/.config"
-    cp "$CLONE_DIR/generic/.config/btm.toml" "$HOME/.config/btm.toml"
+    install_config "$CLONE_DIR/generic/.config/btm.toml" "$HOME/.config/btm.toml"
     # htop
-    mkdir -p "$HOME/.config/htop"
-    cp "$CLONE_DIR/generic/.config/htop/htoprc" "$HOME/.config/htop/htoprc"
+    install_config "$CLONE_DIR/generic/.config/htop/htoprc" "$HOME/.config/htop/htoprc"
     # eza
-    mkdir -p "$HOME/.config/eza"
-    cp "$CLONE_DIR/generic/.config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
+    install_config "$CLONE_DIR/generic/.config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
     # generic
     touch "$HOME/.hushlogin"
     # a bit more complicated cases
@@ -263,6 +262,19 @@ fonts() {
     return 0
 }
 
+macos_defaults() {
+    # show hidden files in Finder by default
+    defaults write com.apple.Finder AppleShowAllFiles true
+    # faster dock speed
+    defaults write com.apple.dock autohide-delay -float 0
+    defaults write com.apple.dock autohide-time-modifier -float 0.15
+
+    if ! [ -f "/opt/.metadata_never_index" ]; then
+        echo "Directory '/opt' is not excluded from spotlight indexing."
+        echo "Create '/opt/.metadata_never_index' and run 'mdutil -i off /opt' to exclude it."
+    fi
+}
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # .zprofile
     update_file "$(cat "$CLONE_DIR/macos/.zprofile")" "$HOME/.zprofile"
@@ -274,6 +286,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     packages
     configs
     scripts
+    macos_defaults
     if [ "$RUN_FONTS" = true ]; then
         fonts
     fi

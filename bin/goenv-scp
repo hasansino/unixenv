@@ -8,7 +8,7 @@
 #
 # Example: `goenv() { source goenv-scp "$1" "$2" }`
 #   $1 - root folder for golang (GOROOT and GOPATH)
-#   $2 - golang version in {major.minor.patch} fromat
+#   $2 - golang version in {major.minor.patch} format
 #
 # If version does not exist in $1/gosdk/go{version}, it will be downloaded and extracted.
 # Automatically detects os (linux/darwin) and architecture, choosing correct link from https://go.dev/dl.

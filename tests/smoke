@@ -6,7 +6,8 @@
 # - each managed shell file holds exactly one UNIXENV block, and lines around it keep their position
 # - the second run leaves the managed shell files unchanged
 # - configuration files, script links and the font are installed
-# - a login interactive shell starts without writing to stderr
+# - a configuration file changed locally is backed up to .bak before it is replaced
+# - a login interactive shell starts from a bare system PATH without writing to stderr
 #
 # Brew packages and casks are installed globally, as setup does.
 #
@@ -22,6 +23,7 @@ HEADER="#_____UNIXENV_CONFIG_START____"
 FOOTER="#_____UNIXENV_CONFIG_END______"
 BEFORE_LINE="# smoke: user line before the managed block"
 AFTER_LINE="# smoke: user line after the managed block"
+LOCAL_EDIT="# smoke: local edit that setup must back up"
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     MANAGED_FILES=(.zprofile .zshrc .zsh_aliases)
@@ -75,6 +77,8 @@ for file in "${MANAGED_FILES[@]}"; do
     echo "$AFTER_LINE" >> "$SMOKE_HOME/$file"
     cp "$SMOKE_HOME/$file" "$WORK_DIR/$file"
 done
+# the repository file may lack a final newline, so start a new line
+printf '\n%s\n' "$LOCAL_EDIT" >> "$SMOKE_HOME/.gitconfig"
 
 run_setup --no-update --fonts
 
@@ -101,9 +105,15 @@ for script in "${LINKED_SCRIPTS[@]}"; do
     fi
 done
 compgen -G "$SMOKE_HOME/$FONT_DIR/*Cascadia*.ttf" > /dev/null || fail "Cascadia Code font missing in ~/$FONT_DIR"
+if [ "$(tail -n 1 "$SMOKE_HOME/.gitconfig.bak" 2> /dev/null)" != "$LOCAL_EDIT" ]; then
+    fail "the local edit was not backed up to ~/.gitconfig.bak"
+fi
+cmp -s "$REPO_DIR/generic/.config/.gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
 
+# A bare PATH proves the shell files put brew on PATH themselves.
 echo "==> starting a login interactive $LOGIN_SHELL"
-if ! HOME="$SMOKE_HOME" "$LOGIN_SHELL" -lic true < /dev/null > /dev/null 2> "$WORK_DIR/stderr"; then
+if ! HOME="$SMOKE_HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" \
+    "$LOGIN_SHELL" -lic true < /dev/null > /dev/null 2> "$WORK_DIR/stderr"; then
     fail "$LOGIN_SHELL failed to start"
 fi
 # Without a terminal, bash always reports that job control is unavailable.
