@@ -1,4 +1,3 @@
-
 # linux rc
 # executed every time an interactive shell is started
 
@@ -6,7 +5,7 @@ if [ -f ~/.bash_aliases ]; then
     source ~/.bash_aliases
 fi
 
-if type brew &>/dev/null; then
+if type brew &> /dev/null; then
     HOMEBREW_PREFIX="$(brew --prefix)"
     if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]; then
         source "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
@@ -16,7 +15,8 @@ if type brew &>/dev/null; then
     done
 fi
 
-eval "$(zoxide init bash)"
+# --no-cmd keeps z and zi from generic/rc
+eval "$(zoxide init bash --no-cmd)"
 eval "$(navi widget bash)"
 eval "$(gh completion -s bash)"
 eval "$(starship init bash)"

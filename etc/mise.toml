@@ -1,0 +1,19 @@
+min_version = "2026.10.21"
+
+[settings]
+lockfile = true
+exec_auto_install = false
+disable_update_warning = true
+
+[tool_alias]
+jsonfmt = "github:caarlos0/jsonfmt"
+yamlfmt = "aqua:google/yamlfmt"
+
+[tools]
+gitleaks = "8.30.1"
+jq = "1.8.2"
+jsonfmt = "0.5.2"
+shellcheck = "0.11.0"
+shfmt = "3.14.1"
+tombi = "1.5.4"
+yamlfmt = "0.21.0"

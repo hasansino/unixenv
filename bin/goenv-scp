@@ -11,25 +11,32 @@
 #   $2 - golang version in {major.minor.patch} fromat
 #
 # If version does not exist in $1/gosdk/go{version}, it will be downloaded and extracted.
-# Automatically detects os (linux/darwin) and architecture, choosing corect link from https://go.dev/dl.
+# Automatically detects os (linux/darwin) and architecture, choosing correct link from https://go.dev/dl.
 #
 # Exports GOROOT to $1/gosdk/go$2
 # Exports GOPATH to $1/gopath
 # Exports GOCACHE to $1/gocache
 
+# The exports only reach the calling shell when this file is sourced.
+if ! (return 0 2> /dev/null); then
+    echo "Error: source this file instead of running it: source goenv-scp <root-dir> <go-version>" >&2
+    exit 1
+fi
+
 is_valid_version() {
     local version="$1"
     if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      return 0
+        return 0
     else
-      return 1
+        return 1
     fi
 }
 
 find_go_download() {
     local download_url="https://go.dev/dl"
     local version="$1"
-    local os_type="$(uname | tr '[:upper:]' '[:lower:]')"
+    local os_type
+    os_type="$(uname | tr '[:upper:]' '[:lower:]')"
     local target_arch
     local json_data
 
@@ -39,17 +46,18 @@ find_go_download() {
     esac
 
     if [ -z "$target_arch" ]; then
-        local machine="$(uname -m)"
+        local machine
+        machine="$(uname -m)"
         case "$machine" in
             x86_64) target_arch="amd64" ;;
             i?86) target_arch="386" ;;
-            arm64|aarch64) target_arch="arm64" ;;
-            armv6*|armv7*) target_arch="armv6l" ;;
+            arm64 | aarch64) target_arch="arm64" ;;
+            armv6* | armv7*) target_arch="armv6l" ;;
             ppc64le) target_arch="ppc64le" ;;
             ppc64) target_arch="ppc64" ;;
             s390x) target_arch="s390x" ;;
             mips*)
-                if [[ "$(lscpu 2>/dev/null | grep 'Little Endian')" != "" ]]; then
+                if [[ "$(lscpu 2> /dev/null | grep 'Little Endian')" != "" ]]; then
                     target_arch="mipsle"
                 else
                     target_arch="mips"
@@ -65,7 +73,8 @@ find_go_download() {
 
     json_data=$(curl -s "$download_url/?mode=json&include=all")
 
-    local file_info=$(echo "$json_data" | jq -r --arg v "go$version" --arg os "$os_type" --arg arch "$target_arch" \
+    local file_info
+    file_info=$(echo "$json_data" | jq -r --arg v "go$version" --arg os "$os_type" --arg arch "$target_arch" \
         '.[] | select(.version == $v) | .files[] | select(.os == $os and .arch == $arch and .kind == "archive")')
 
     if [ -z "$file_info" ]; then
@@ -73,8 +82,9 @@ find_go_download() {
         return 1
     fi
 
-    local filename=$(echo "$file_info" | jq -r '.filename')
-    local sha256=$(echo "$file_info" | jq -r '.sha256')
+    local filename sha256
+    filename=$(echo "$file_info" | jq -r '.filename')
+    sha256=$(echo "$file_info" | jq -r '.sha256')
 
     echo "$download_url/$filename#sha256=$sha256"
 }
@@ -93,13 +103,14 @@ find_or_download_go_sdk() {
     fi
 
     echo "Go SDK version $GO_VERSION not found, downloading..." >&2
-    local download_url=$(find_go_download "$GO_VERSION")
-    if [ $? -ne 0 ] || [ -z "$download_url" ]; then
+    local download_url
+    if ! download_url=$(find_go_download "$GO_VERSION") || [ -z "$download_url" ]; then
         echo "Failed to get download URL for Go $GO_VERSION" >&2
         return 1
     fi
 
-    local temp_file=$(mktemp)
+    local temp_file
+    temp_file=$(mktemp)
     echo "Downloading from: $download_url" >&2
 
     if ! curl -L -o "$temp_file" "$download_url"; then
@@ -123,7 +134,8 @@ find_or_download_go_sdk() {
     rm -f "$temp_file"
 
     if [ -d "${SDK_DIR}/go" ]; then
-        local actual_version=$(cat "${SDK_DIR}/go/VERSION" 2>/dev/null | grep -o 'go[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "go${GO_VERSION}")
+        local actual_version
+        actual_version=$(cat "${SDK_DIR}/go/VERSION" 2> /dev/null | grep -o 'go[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "go${GO_VERSION}")
         mv "${SDK_DIR}/go" "${SDK_DIR}/${actual_version}"
         echo "${actual_version}"
     else
@@ -134,10 +146,11 @@ find_or_download_go_sdk() {
     return 0
 }
 
+# Sourced: return to the calling shell instead of exiting it.
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <root-dir> <go-version>" >&2
     echo "Example: $0 /opt 1.25.0" >&2
-    exit 1
+    return 1
 fi
 
 ROOT_DIR="$1"
@@ -145,12 +158,11 @@ GO_VERSION="$2"
 
 if ! is_valid_version "$GO_VERSION"; then
     echo "Error: $GO_VERSION is not a valid version. Please use the format major.minor.patch"
-    exit 1
+    return 1
 fi
 
-SDK=$(find_or_download_go_sdk ${ROOT_DIR} ${GO_VERSION})
-if [ $? -ne 0 ]; then
-    exit 1
+if ! SDK=$(find_or_download_go_sdk "$ROOT_DIR" "$GO_VERSION"); then
+    return 1
 fi
 
 export GOROOT="${ROOT_DIR}/gosdk/${SDK}"

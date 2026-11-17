@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Smoke test for setup.
+#
+# Runs `setup --no-update --fonts` twice with HOME in a temporary directory, then checks that:
+# - each managed shell file holds exactly one UNIXENV block, and lines around it keep their position
+# - the second run leaves the managed shell files unchanged
+# - configuration files, script links and the font are installed
+# - a login interactive shell starts without writing to stderr
+#
+# Brew packages and casks are installed globally, as setup does.
+#
+# Usage: task test:smoke
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SMOKE_HOME="$(mktemp -d)"
+WORK_DIR="$(mktemp -d)"
+
+HEADER="#_____UNIXENV_CONFIG_START____"
+FOOTER="#_____UNIXENV_CONFIG_END______"
+BEFORE_LINE="# smoke: user line before the managed block"
+AFTER_LINE="# smoke: user line after the managed block"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    MANAGED_FILES=(.zprofile .zshrc .zsh_aliases)
+    LOGIN_SHELL=zsh
+    FONT_DIR="Library/Fonts"
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    MANAGED_FILES=(.bash_profile .bashrc .bash_aliases)
+    LOGIN_SHELL=bash
+    FONT_DIR=".local/share/fonts"
+else
+    echo "Unsupported OS: $OSTYPE" >&2
+    exit 1
+fi
+
+INSTALLED_FILES=(
+    .ssh/config
+    .ssh/config_hosts
+    .nanorc
+    .gitconfig
+    .gitignore
+    .config/btm.toml
+    .config/htop/htoprc
+    .config/eza/theme.yml
+    .docker/config.json
+    .hushlogin
+)
+LINKED_SCRIPTS=(goenv-scp back-opt)
+
+FAILURES=0
+fail() {
+    echo "FAIL: $*" >&2
+    FAILURES=$((FAILURES + 1))
+}
+
+run_setup() {
+    echo "==> setup $*"
+    HOME="$SMOKE_HOME" "$SMOKE_HOME/unixenv/setup" "$@"
+}
+
+echo "Smoke HOME: $SMOKE_HOME"
+# setup reads the repository from $HOME/unixenv
+ln -s "$REPO_DIR" "$SMOKE_HOME/unixenv"
+
+for file in "${MANAGED_FILES[@]}"; do
+    echo "$BEFORE_LINE" > "$SMOKE_HOME/$file"
+done
+
+run_setup --no-update --fonts
+
+for file in "${MANAGED_FILES[@]}"; do
+    echo "$AFTER_LINE" >> "$SMOKE_HOME/$file"
+    cp "$SMOKE_HOME/$file" "$WORK_DIR/$file"
+done
+
+run_setup --no-update --fonts
+
+echo "==> checking managed shell files"
+for file in "${MANAGED_FILES[@]}"; do
+    path="$SMOKE_HOME/$file"
+    [ "$(grep -cxF "$HEADER" "$path")" -eq 1 ] || fail "$file: expected exactly one block start line"
+    [ "$(grep -cxF "$FOOTER" "$path")" -eq 1 ] || fail "$file: expected exactly one block end line"
+    [ "$(head -n 1 "$path")" = "$BEFORE_LINE" ] || fail "$file: the line before the block moved"
+    [ "$(tail -n 1 "$path")" = "$AFTER_LINE" ] || fail "$file: the line after the block moved"
+    if ! diff -u "$WORK_DIR/$file" "$path" >&2; then
+        fail "$file: the second setup run changed it"
+    fi
+done
+
+echo "==> checking installed files"
+for file in "${INSTALLED_FILES[@]}"; do
+    [ -f "$SMOKE_HOME/$file" ] || fail "missing ~/$file"
+done
+for script in "${LINKED_SCRIPTS[@]}"; do
+    link="$SMOKE_HOME/.local/bin/$script"
+    if [ ! -L "$link" ] || [ ! -x "$link" ]; then
+        fail "missing executable link ~/.local/bin/$script"
+    fi
+done
+compgen -G "$SMOKE_HOME/$FONT_DIR/*Cascadia*.ttf" > /dev/null || fail "Cascadia Code font missing in ~/$FONT_DIR"
+
+echo "==> starting a login interactive $LOGIN_SHELL"
+if ! HOME="$SMOKE_HOME" "$LOGIN_SHELL" -lic true < /dev/null > /dev/null 2> "$WORK_DIR/stderr"; then
+    fail "$LOGIN_SHELL failed to start"
+fi
+# Without a terminal, bash always reports that job control is unavailable.
+if grep -vE '^bash: (cannot set terminal process group|no job control in this shell)' \
+    "$WORK_DIR/stderr" > "$WORK_DIR/stderr.filtered"; then
+    fail "$LOGIN_SHELL wrote to stderr on startup:"
+    cat "$WORK_DIR/stderr.filtered" >&2
+fi
+
+if [ "$FAILURES" -gt 0 ]; then
+    echo "$FAILURES check(s) failed; HOME kept for inspection: $SMOKE_HOME" >&2
+    exit 1
+fi
+rm -rf "$SMOKE_HOME" "$WORK_DIR"
+echo "Smoke test passed."

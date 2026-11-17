@@ -1,0 +1,74 @@
+---
+
+name: lint
+
+# Lint shell scripts, dotfiles, and configuration files.
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        required: true
+        type: string
+      continue_on_error:
+        required: true
+        type: boolean
+      timeout_minutes:
+        required: false
+        type: number
+        default: 10
+
+permissions: {}
+
+jobs:
+
+  # Shell scripts and dotfiles.
+  # @see https://github.com/koalaman/shellcheck
+  # @see https://github.com/mvdan/sh
+  shell-lint:
+    name: shell-lint
+    runs-on: ${{ inputs.runs_on }}
+    continue-on-error: ${{ inputs.continue_on_error }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 'Install pinned shell linters'
+        uses: ./.github/actions/setup-tools
+        with:
+          install-args: --locked shellcheck shfmt
+      - name: 'Check shell scripts and dotfiles'
+        run: task --exit-code lint:shell
+
+  # JSON, YAML, and TOML formatting and lint rules; git and ssh configuration.
+  # @see https://github.com/caarlos0/jsonfmt
+  # @see https://github.com/google/yamlfmt
+  # @see https://github.com/tombi-toml/tombi
+  config-lint:
+    name: config-lint
+    runs-on: ${{ inputs.runs_on }}
+    continue-on-error: ${{ inputs.continue_on_error }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 'Install pinned configuration linters'
+        uses: ./.github/actions/setup-tools
+        with:
+          install-args: --locked jsonfmt yamlfmt tombi jq
+      - name: 'Check JSON formatting'
+        run: task --exit-code lint:json
+      - name: 'Check YAML formatting'
+        run: task --exit-code lint:yaml
+      - name: 'Check TOML formatting and lint rules'
+        run: task --exit-code lint:toml
+      - name: 'Check git and ssh configuration'
+        run: task --exit-code lint:config

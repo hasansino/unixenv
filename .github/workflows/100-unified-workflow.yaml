@@ -1,0 +1,65 @@
+---
+
+name: unified-workflow
+
+on:
+  # manual trigger
+  workflow_dispatch:
+  # push or merge to master
+  push:
+    branches:
+      - master
+  # pull request targeting master branch created or updated
+  pull_request:
+    branches:
+      - master
+  # weekly: setup installs the latest brew packages, which can break without a commit here
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions: {}
+
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request' && format('unified-pr-{0}', github.event.pull_request.number) || format('unified-run-{0}-{1}',
+    github.run_id, github.run_attempt) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+
+  # stage 1: linting
+
+  lint:
+    uses: ./.github/workflows/110-lint.yaml
+    permissions:
+      contents: read
+    with:
+      runs_on: ubuntu-latest
+      continue_on_error: false
+      timeout_minutes: 10
+
+  # stage 2: security scans
+
+  security:
+    uses: ./.github/workflows/120-security.yaml
+    permissions:
+      contents: read
+    needs:
+      - lint
+    with:
+      runs_on: ubuntu-latest
+      continue_on_error: false
+      timeout_minutes: 10
+
+  # stage 3: run setup on fresh runners
+
+  smoke-test:
+    uses: ./.github/workflows/130-smoke-test.yaml
+    permissions:
+      contents: read
+    needs:
+      - security
+    with:
+      runs_on: '["ubuntu-latest", "macos-latest"]'
+      continue_on_error: false
+      timeout_minutes: 45

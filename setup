@@ -14,7 +14,7 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "Error: running from root is not allowed."
     exit 1
 fi
-if ! type brew >/dev/null 2>&1; then
+if ! type brew > /dev/null 2>&1; then
     echo "Error: homebrew is required, but not installed."
     exit 1
 fi
@@ -33,15 +33,27 @@ else
 fi
 # --- PREREQUISITES END ---
 
+# --- ARGUMENTS ---
+RUN_FONTS=false
+RUN_UPDATE=true
+for arg in "$@"; do
+    case "$arg" in
+        --fonts) RUN_FONTS=true ;;
+        --no-update) RUN_UPDATE=false ;; # use the existing clone as is (CI tests the checked-out commit)
+    esac
+done
+# --- ARGUMENTS END ---
+
 # --- AUTOUPDATE ---
 get_script_path() {
     local source="${BASH_SOURCE[0]}"
     while [ -h "$source" ]; do
-        local dir="$( cd -P "$( dirname "$source" )" && pwd )"
+        local dir
+        dir="$(cd -P "$(dirname "$source")" && pwd)"
         source="$(readlink "$source")"
         [[ $source != /* ]] && source="$dir/$source"
     done
-    echo "$( cd -P "$( dirname "$source" )" && pwd )/$( basename "$source" )"
+    echo "$(cd -P "$(dirname "$source")" && pwd)/$(basename "$source")"
 }
 get_checksum() {
     local file_path="$1"
@@ -52,30 +64,36 @@ get_checksum() {
     fi
 }
 
-SCRIPT_PATH=$(get_script_path)
-echo "Script path: $SCRIPT_PATH"
-if [ ! -f "$SCRIPT_PATH" ]; then
-    echo "Error: script not found."
-    exit 1
-fi
-OLD_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
-echo "Old checksum: $OLD_CHECKSUM"
-
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
-if [ -d "$CLONE_DIR" ]; then
-    echo "Updating git repo..."
-    git -C "$CLONE_DIR" pull origin master
-else
-    echo "Cloning git repo..."
-    git clone "$REPO_URL" "$CLONE_DIR"
-fi
 
-NEW_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
-echo "New checksum: $NEW_CHECKSUM"
-if [ "$OLD_CHECKSUM" != "$NEW_CHECKSUM" ]; then
-    echo "Script has been updated. Restarting..."
-    exec "$SCRIPT_PATH" "$@"
+if [ "$RUN_UPDATE" = true ]; then
+    SCRIPT_PATH=$(get_script_path)
+    echo "Script path: $SCRIPT_PATH"
+    if [ ! -f "$SCRIPT_PATH" ]; then
+        echo "Error: script not found."
+        exit 1
+    fi
+    OLD_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
+    echo "Old checksum: $OLD_CHECKSUM"
+
+    if [ -d "$CLONE_DIR" ]; then
+        echo "Updating git repo..."
+        git -C "$CLONE_DIR" pull origin master
+    else
+        echo "Cloning git repo..."
+        git clone "$REPO_URL" "$CLONE_DIR"
+    fi
+
+    NEW_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
+    echo "New checksum: $NEW_CHECKSUM"
+    if [ "$OLD_CHECKSUM" != "$NEW_CHECKSUM" ]; then
+        echo "Script has been updated. Restarting..."
+        exec "$SCRIPT_PATH" "$@"
+    fi
+elif [ ! -d "$CLONE_DIR" ]; then
+    echo "Error: $CLONE_DIR not found, --no-update needs an existing clone."
+    exit 1
 fi
 # --- AUTOUPDATE END ---
 
@@ -87,51 +105,43 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# arguments
-RUN_FONTS=false
-for arg in "$@"; do
-    case "$arg" in
-        --fonts) RUN_FONTS=true ;;
-    esac
-done
-
 update_file() {
     local header="#_____UNIXENV_CONFIG_START____"
     local footer="#_____UNIXENV_CONFIG_END______"
     local source="$1"
     local target="$2"
 
-    local escaped_header=$(printf '%s\n' "$header" | sed 's/[][\\/.^$*]/\\&/g')
-    local escaped_footer=$(printf '%s\n' "$footer" | sed 's/[][\\/.^$*]/\\&/g')
+    local block_file
+    block_file=$(mktemp)
+    printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$block_file"
 
-    if [ ! -f "$target" ]; then
-        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$target"
-    elif grep -q "$header" "$target" && grep -q "$footer" "$target"; then
-        TMP_FILE=$(mktemp)
-        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" > "$TMP_FILE" #Removed extra newlines
-
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "/$escaped_header/,/$escaped_footer/d" "$target"
-        elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-            sed -i "/$escaped_header/,/$escaped_footer/d" "$target"
-        fi
-
-        cat "$TMP_FILE" >> "$target"
-        rm "$TMP_FILE"
+    if [ -f "$target" ] && grep -qF "$header" "$target" && grep -qF "$footer" "$target"; then
+        # replace block in place, so lines before/after it keep their position
+        local tmp_file
+        tmp_file=$(mktemp)
+        awk -v header="$header" -v footer="$footer" '
+            NR == FNR { block = block $0 "\n"; next }
+            index($0, header) { if (!done) printf "%s", block; done = 1; skip = 1; next }
+            skip { if (index($0, footer)) skip = 0; next }
+            { print }
+        ' "$block_file" "$target" > "$tmp_file"
+        cat "$tmp_file" > "$target"
+        rm "$tmp_file"
     else
-        printf "%s\n%s\n%s\n" "$header" "$source" "$footer" >> "$target"
+        cat "$block_file" >> "$target"
     fi
+    rm "$block_file"
 }
 
 packages() {
     brew install -q ca-certificates \
-    wget nano htop watch unzip \
-    zoxide fzf eza bat broot navi dust fd hyperfine \
-    gotop bottom \
-    lazydocker \
-    kubectl k9s helm \
-    uv gh jq starship glow diff-so-fancy tig \
-    gonzo tlrc nushell
+        wget nano htop watch unzip \
+        zoxide fzf eza bat broot navi dust fd hyperfine \
+        gotop bottom \
+        lazydocker \
+        kubectl k9s helm \
+        uv gh jq starship glow diff-so-fancy tig \
+        gonzo tlrc nushell
     brew install --cask claude-code
     brew install --cask codex
     brew install --cask antigravity-cli
@@ -149,6 +159,7 @@ configs() {
     cp "$CLONE_DIR/generic/.config/.gitconfig" "$HOME/.gitconfig"
     cp "$CLONE_DIR/generic/.config/.gitignore" "$HOME/.gitignore"
     # btm
+    mkdir -p "$HOME/.config"
     cp "$CLONE_DIR/generic/.config/btm.toml" "$HOME/.config/btm.toml"
     # htop
     mkdir -p "$HOME/.config/htop"
@@ -167,7 +178,7 @@ config_docker() {
     local CONFIG_FILE="$CONFIG_DIR/config.json"
     local GENERIC_CONFIG="$CLONE_DIR/generic/.config/docker/config.json"
 
-    if ! command -v jq >/dev/null 2>&1; then
+    if ! command -v jq > /dev/null 2>&1; then
         echo "config_docker error: jq is required but not installed." >&2
         return 1
     fi
@@ -201,12 +212,12 @@ fonts() {
     echo "Installing $FONT_NAME font..."
 
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if find "$HOME/.local/share/fonts" /usr/share/fonts 2>/dev/null -type f -name "*Cascadia*.ttf" | grep -q .; then
+        if find "$HOME/.local/share/fonts" /usr/share/fonts -type f -name "*Cascadia*.ttf" 2> /dev/null | grep -q .; then
             echo "✓ $FONT_NAME already installed"
             return 0
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-        if find "$HOME/Library/Fonts" 2>/dev/null -type f -name "*Cascadia*.ttf" | grep -q .; then
+        if find "$HOME/Library/Fonts" -type f -name "*Cascadia*.ttf" 2> /dev/null | grep -q .; then
             echo "✓ $FONT_NAME already installed"
             return 0
         fi
@@ -233,7 +244,7 @@ fonts() {
         local FONT_DIR="$HOME/.local/share/fonts"
         mkdir -p "$FONT_DIR"
         find . -name "*.ttf" -exec cp {} "$FONT_DIR" \;
-        command -v fc-cache &>/dev/null && fc-cache -fv > /dev/null 2>&1
+        command -v fc-cache &> /dev/null && fc-cache -fv > /dev/null 2>&1
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         local FONT_DIR="$HOME/Library/Fonts"
         mkdir -p "$FONT_DIR"

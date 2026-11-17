@@ -1,0 +1,5 @@
+# @see https://github.com/koalaman/shellcheck/wiki/Directive#shellcheckrc-file
+# Passed explicitly with --rcfile by `task lint:shell`.
+
+# Dotfiles source files whose paths only exist on the target machine.
+disable=SC1090,SC1091

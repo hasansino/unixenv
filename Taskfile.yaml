@@ -1,0 +1,345 @@
+---
+
+# Reference:
+#   https://taskfile.dev/docs/reference/schema
+# JSON schema:
+#   https://taskfile.dev/schema.json
+
+# ╭────────────────────----------------──────────╮
+# │                    unixenv                   │
+# ╰─────────────────────----------------─────────╯
+#
+# Before running any commands, ensure following tools are installed:
+# - git @see https://git-scm.com/
+# - mise @see https://mise.jdx.dev/
+# - task @see https://taskfile.dev/
+#
+# Linters are pinned in etc/mise.toml and installed into .tools/ by `task setup`,
+# apart from the machine environment this repository installs.
+#
+# This file can be executed manually, from CI, by IDE and invoked by AI.
+#
+# Write all task summaries as multiline literal blocks (summary: |-).
+# Keep summary source lines at most 120 characters long, including indentation.
+
+version: '3'
+
+set:
+  - errexit
+  - pipefail
+
+vars:
+  # Sourced bash dotfiles have no shebang; setup also joins generic/* into the zsh files.
+  BASH_SOURCED_FILES: generic/aliases generic/rc linux/.bash_aliases linux/.bash_profile linux/.bashrc
+  ZSH_FILES: macos/.zprofile macos/.zshrc macos/.zsh_aliases
+  SHFMT_FLAGS: -i 4 -ci -sr -bn
+  # Exported by applications: checked for valid JSON only, never reformatted.
+  JSON_EXPORTS: macos/.config/iterm2.profile.json
+
+env:
+  MISE_DEFAULT_CONFIG_FILENAME: etc/mise.toml
+  MISE_DATA_DIR: '{{.ROOT_DIR}}/.tools'
+  MISE_CACHE_DIR: '{{.ROOT_DIR}}/.tools/cache'
+  MISE_STATE_DIR: '{{.ROOT_DIR}}/.tools/state'
+  TASK_TEMP_DIR: '{{.ROOT_DIR}}/.tools/task'
+
+tasks:
+
+  help:
+    desc: "List available tasks in Taskfile order"
+    aliases:
+      - default
+    cmds:
+      - "task --list --sort none"
+
+  env:export:
+    desc: "Print the project tooling environment as KEY=value lines"
+    summary: |-
+      Usage: task env:export
+      Prints project variables for CI setup and editor configuration.
+    silent: true
+    cmds:
+      - |
+        printf '%s\n' \
+          "MISE_DEFAULT_CONFIG_FILENAME=$MISE_DEFAULT_CONFIG_FILENAME" \
+          "MISE_DATA_DIR=$MISE_DATA_DIR" \
+          "MISE_CACHE_DIR=$MISE_CACHE_DIR" \
+          "MISE_STATE_DIR=$MISE_STATE_DIR" \
+          "TASK_TEMP_DIR=$TASK_TEMP_DIR"
+
+  tool:
+    desc: "Run a command with the project tools"
+    summary: |-
+      Usage: task tool -- COMMAND [ARGS...]
+    interactive: true
+    silent: true
+    preconditions:
+      - sh: 'test -n {{.CLI_ARGS | shellQuote}}'
+        msg: "Usage: task tool -- COMMAND [ARGS...]"
+    cmds:
+      - 'mise exec -- {{.CLI_ARGS}}'
+
+  # ╭────────────────────----------------──────────╮
+  # │                    Setup                     │
+  # ╰─────────────────────----------------─────────╯
+
+  setup:
+    desc: "Install pinned project tools"
+    summary: |-
+      Usage: task setup
+      Installs into .tools/; mise and Task must already be installed.
+    cmds:
+      - "mise install --locked"
+
+  bump:
+    desc: "Set a mise tool dependency to a version (writes)"
+    summary: |-
+      Usage: task bump TOOL=<tool> VERSION=<version>
+      Installs the selected tool version and updates etc/mise.toml and etc/mise.lock.
+    requires:
+      vars:
+        - TOOL
+        - VERSION
+    preconditions:
+      - sh: 'test -n {{.TOOL | shellQuote}} && test -n {{.VERSION | shellQuote}}'
+        msg: "TOOL and VERSION must not be empty."
+      - sh: 'test -z {{.CLI_ARGS | shellQuote}}'
+        msg: "Pass TOOL=... VERSION=... without arguments after --."
+    cmds:
+      - 'mise use --pin -- {{printf "%s@%s" .TOOL .VERSION | shellQuote}}'
+      - 'mise lock -- {{.TOOL | shellQuote}}'
+
+  # ╭────────────────────----------------──────────╮
+  # │                   Testing                    │
+  # ╰─────────────────────----------------─────────╯
+
+  test:smoke:
+    desc: "Run setup against a throwaway HOME and check the result (installs brew packages)"
+    summary: |-
+      Usage: task test:smoke
+      Runs `setup --no-update --fonts` twice with HOME in a temporary directory, then checks managed blocks,
+      installed configuration and shell startup. Brew packages and casks are installed globally, as setup does.
+      CI runs it with `task --yes test:smoke`.
+    prompt: "test:smoke runs setup, which installs brew packages and casks globally. Continue?"
+    cmds:
+      - "bash tests/smoke"
+
+  # ╭────────────────────----------------──────────╮
+  # │                  Formatters                  │
+  # ╰─────────────────────----------------─────────╯
+
+  fmt:shell:
+    desc: "Format shell scripts and dotfiles with shfmt (writes)"
+    summary: |-
+      Usage: task fmt:shell
+      Formats the same files as lint:shell.
+    vars:
+      BASH_SCRIPTS: &bash_scripts
+        sh: "git grep --untracked -lIE '^#!/(usr/)?bin/(env )?bash' -- ."
+    cmds:
+      - 'mise exec -- shfmt -ln bash {{.SHFMT_FLAGS}} -w {{.BASH_SCRIPTS | catLines}} {{.BASH_SOURCED_FILES}}'
+      - 'mise exec -- shfmt -ln zsh {{.SHFMT_FLAGS}} -w {{.ZSH_FILES}}'
+
+  fmt:json:
+    desc: "Format explicit JSON files (writes)"
+    summary: |-
+      Usage: task fmt:json -- FILE.json [FILE.json ...]
+    preconditions: &files
+      - sh: |
+          set -- {{.CLI_ARGS}}
+          [ "$#" -gt 0 ]
+        msg: "Pass explicit file paths after --."
+      - &file_paths
+        sh: |
+          set -- {{.CLI_ARGS}}
+          for file do
+            case "$file" in
+              -*|!*|*\**|*\?*|*\[*|*\]*|*\{*|*\}*) printf 'Expected a literal file path: %s\n' "$file" >&2; exit 2 ;;
+            esac
+            [ -f "$file" ] || { printf 'Expected an existing file: %s\n' "$file" >&2; exit 2; }
+          done
+        msg: "Pass explicit existing file paths after --."
+    cmds:
+      - |
+        set -- {{.CLI_ARGS}}
+        mise exec -- jsonfmt -w "$@"
+
+  fmt:yaml:
+    desc: "Format explicit YAML files (writes)"
+    summary: |-
+      Usage: task fmt:yaml -- FILE.yaml [FILE.yaml ...]
+    preconditions: *files
+    cmds:
+      - |
+        set -- {{.CLI_ARGS}}
+        mise exec -- yamlfmt -conf etc/yamlfmt.yaml "$@"
+
+  fmt:toml:
+    desc: "Format explicit TOML files (writes)"
+    summary: |-
+      Usage: task fmt:toml -- FILE.toml [FILE.toml ...]
+    preconditions: *files
+    cmds:
+      - |
+        set -- {{.CLI_ARGS}}
+        for file do
+          case "$file" in
+            /*) ;;
+            *) file="$PWD/$file" ;;
+          esac
+          # Tombi discovers etc/tombi.toml from its working directory.
+          (cd etc && mise exec -- tombi format --offline "$file")
+        done
+
+  # ╭────────────────────----------------──────────╮
+  # │                   Linters                    │
+  # ╰─────────────────────----------------─────────╯
+
+  lint:
+    desc: "Run shell, configuration, and secret linters"
+    summary: |-
+      Usage: task lint
+      Accepts no arguments; use a lint:* task to select files.
+    preconditions:
+      - sh: |
+          set -- {{.CLI_ARGS}}
+          [ "$#" -eq 0 ]
+        msg: "Use a lint:* task for file arguments."
+    cmds:
+      - task: "lint:shell"
+      - task: "lint:json"
+      - task: "lint:yaml"
+      - task: "lint:toml"
+      - task: "lint:config"
+      - task: "lint:secrets"
+
+  lint:shell:
+    desc: "Check shell scripts and dotfiles with ShellCheck and shfmt (read only)"
+    summary: |-
+      Usage: task lint:shell
+      Bash scripts are found by shebang; sourced bash dotfiles and zsh files are listed in Taskfile vars.
+      Zsh files are only parsed and format-checked by shfmt, because ShellCheck does not support zsh.
+    vars:
+      BASH_SCRIPTS: *bash_scripts
+    cmds:
+      - 'mise exec -- shellcheck --rcfile etc/shellcheckrc --shell=bash {{.BASH_SCRIPTS | catLines}} {{.BASH_SOURCED_FILES}}'
+      - 'mise exec -- shfmt -ln bash {{.SHFMT_FLAGS}} -d {{.BASH_SCRIPTS | catLines}} {{.BASH_SOURCED_FILES}}'
+      - 'mise exec -- shfmt -ln zsh {{.SHFMT_FLAGS}} -d {{.ZSH_FILES}}'
+
+  lint:json:
+    desc: "Check JSON source formatting, or explicit files (read only)"
+    summary: |-
+      Usage: task lint:json [-- FILE.json ...]
+      Defaults to Git source JSON files; application exports are only checked for valid JSON.
+    vars:
+      SOURCE_FILES:
+        sh: |
+          {{if not .CLI_ARGS}}
+          git ls-files --cached --others --exclude-standard -z -- '*.json' \
+            {{range splitList " " .JSON_EXPORTS}}':!:{{.}}' {{end}}
+          {{end}}
+    preconditions:
+      - *file_paths
+    cmds:
+      - |
+        set -- {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{range splitList "\x00" .SOURCE_FILES}}{{if .}}{{. | shellQuote}} {{end}}{{end}}{{end}}
+        for file do
+          if [ -f "$file" ]; then
+            mise exec -- jsonfmt "$file"
+          fi
+        done
+      - |
+        {{if not .CLI_ARGS}}
+        for file in {{.JSON_EXPORTS}}; do
+          mise exec -- jq empty "$file"
+        done
+        {{end}}
+
+  lint:yaml:
+    desc: "Check YAML source formatting, or explicit files (read only)"
+    summary: |-
+      Usage: task lint:yaml [-- FILE.yaml ...]
+      Defaults to Git source YAML files.
+    vars:
+      SOURCE_FILES:
+        sh: |
+          {{if not .CLI_ARGS}}
+          git ls-files --cached --others --exclude-standard -z -- '*.yaml' '*.yml'
+          {{end}}
+    preconditions:
+      - *file_paths
+    cmds:
+      - |
+        set -- {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{range splitList "\x00" .SOURCE_FILES}}{{if .}}{{. | shellQuote}} {{end}}{{end}}{{end}}
+        for file do
+          if [ -f "$file" ]; then
+            mise exec -- yamlfmt -conf etc/yamlfmt.yaml -lint "$file"
+          fi
+        done
+
+  lint:toml:
+    desc: "Check TOML source formatting and lint rules, or explicit files (read only)"
+    summary: |-
+      Usage: task lint:toml [-- FILE.toml ...]
+      Defaults to Git source files ending in .toml.
+    vars:
+      SOURCE_FILES:
+        sh: |
+          {{if not .CLI_ARGS}}
+          git ls-files --cached --others --exclude-standard -z -- '*.toml'
+          {{end}}
+    preconditions:
+      - *file_paths
+    cmds:
+      - |
+        set -- {{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{range splitList "\x00" .SOURCE_FILES}}{{if .}}{{. | shellQuote}} {{end}}{{end}}{{end}}
+        for file do
+          if [ -f "$file" ]; then
+            case "$file" in
+              /*) ;;
+              *) file="$PWD/$file" ;;
+            esac
+            # Tombi discovers etc/tombi.toml from its working directory.
+            (
+              cd etc
+              mise exec -- tombi format --offline --check "$file"
+              mise exec -- tombi lint --offline --error-on-warnings "$file"
+            )
+          fi
+        done
+
+  lint:config:
+    desc: "Check that git and ssh accept the shipped configuration files (read only)"
+    summary: |-
+      Usage: task lint:config
+      Uses the system git and ssh, which parse each file and fail on malformed lines or unknown options.
+    cmds:
+      - |
+        for file in generic/.config/.gitconfig generic/.config/.gitconfig.gpg; do
+          printf 'Checking %s\n' "$file"
+          git config --file "$file" --list > /dev/null
+        done
+      - |
+        printf 'Checking %s\n' generic/.config/.ssh/config
+        # -G prints the resolved settings without connecting; -T skips the pseudo-terminal notice.
+        ssh -T -G -F generic/.config/.ssh/config example.invalid < /dev/null > /dev/null
+
+  lint:secrets:
+    desc: "Scan Git history, or explicit files, for secrets with Gitleaks"
+    summary: |-
+      Usage: task lint:secrets [-- FILE ...]
+      Defaults to Git history. Explicit files are scanned directly, including ignored and untracked files.
+      Findings are redacted; secret findings and scanner errors fail the task.
+    preconditions:
+      - *file_paths
+    cmds:
+      - |-
+        set -- {{.CLI_ARGS}}
+        if [ "$#" -eq 0 ]; then
+          mise exec -- gitleaks git --no-banner --redact -v
+        else
+          for file do
+            printf 'Scanning %s for secrets\n' "$file"
+            mise exec -- gitleaks stdin --no-banner --redact < "$file"
+          done
+        fi

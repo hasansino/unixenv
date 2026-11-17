@@ -1,4 +1,3 @@
-
 # generic rc
 # executed every time an interactive shell is started
 
@@ -11,7 +10,8 @@ mkdir -p /tmp/.cache/nano
 export EDITOR=nano
 export VISUAL=nano
 
-export GPG_TTY=$(tty)
+GPG_TTY=$(tty)
+export GPG_TTY
 
 # "The cure for boredom is curiosity. There is no cure for curiosity."
 export HOMEBREW_NO_ANALYTICS=1
@@ -20,12 +20,19 @@ export HOMEBREW_NO_ENV_HINTS=1
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
 export EZA_CONFIG_DIR="$HOME/.config/eza"
 
-source $HOME/.config/broot/launcher/bash/br
+# created by `broot --install`, which setup does not run
+if [ -f "$HOME/.config/broot/launcher/bash/br" ]; then
+    source "$HOME/.config/broot/launcher/bash/br"
+fi
 
+# zoxide is initialized with --no-cmd, so these replace its z and zi
 z() {
-  if [[ $# -eq 0 ]]; then
-    cd "$(zoxide query -l | fzf --height 40% --reverse --preview 'ls {}')"
-  else
-    __zoxide_z "$@"
-  fi
+    if [[ $# -eq 0 ]]; then
+        cd "$(zoxide query -l | fzf --height 40% --reverse --preview 'ls {}')" || return
+    else
+        __zoxide_z "$@"
+    fi
+}
+zi() {
+    __zoxide_zi "$@"
 }

@@ -1,4 +1,3 @@
-
 # darwin rc
 # executed every time an interactive shell is started
 
@@ -7,13 +6,14 @@ if [ -f ~/.zsh_aliases ]; then
 fi
 
 if [ -x /opt/homebrew/bin/brew ]; then
-  fpath=("$(brew --prefix)/share/zsh/site-functions" $fpath)
-  typeset -U fpath
-  autoload -Uz compinit
-  compinit -i
+    fpath=("$(brew --prefix)/share/zsh/site-functions" $fpath)
+    typeset -U fpath
+    autoload -Uz compinit
+    compinit -i
 fi
 
-eval "$(zoxide init zsh)"
+# --no-cmd keeps z and zi from generic/rc
+eval "$(zoxide init zsh --no-cmd)"
 eval "$(navi widget zsh)"
 eval "$(gh completion -s zsh)"
 eval "$(starship init zsh)"

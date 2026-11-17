@@ -1,0 +1,44 @@
+---
+
+name: security
+
+# Secret leak detection.
+# @see https://github.com/gitleaks/gitleaks
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        required: true
+        type: string
+      continue_on_error:
+        required: true
+        type: boolean
+      timeout_minutes:
+        required: false
+        type: number
+        default: 10
+
+permissions: {}
+
+jobs:
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ${{ inputs.runs_on }}
+    continue-on-error: ${{ inputs.continue_on_error }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout repository with full history'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 'Install pinned Gitleaks'
+        uses: ./.github/actions/setup-tools
+        with:
+          install-args: --locked gitleaks
+      - name: 'Run Gitleaks scan'
+        run: task --exit-code lint:secrets

@@ -1,0 +1,56 @@
+---
+
+name: smoke-test
+
+# Run setup on fresh runners and check the installed environment.
+# Brew installs every package from scratch, so each runner takes several minutes.
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        description: 'JSON array of runner labels; the smoke test runs once on each'
+        required: true
+        type: string
+      continue_on_error:
+        required: true
+        type: boolean
+      timeout_minutes:
+        required: false
+        type: number
+        default: 45
+
+permissions: {}
+
+jobs:
+
+  smoke-test:
+    name: smoke-test (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ inputs.continue_on_error }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ${{ fromJSON(inputs.runs_on) }}
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # setup installs its own packages with brew; the smoke test only needs Task.
+      - name: 'Install Task'
+        uses: ./.github/actions/setup-tools
+        with:
+          cache: 'false'
+      # Homebrew is preinstalled on Linux runners but not on PATH; setup requires it.
+      - name: 'Put Homebrew on PATH'
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |-
+          echo '/home/linuxbrew/.linuxbrew/bin' >> "$GITHUB_PATH"
+          echo '/home/linuxbrew/.linuxbrew/sbin' >> "$GITHUB_PATH"
+      - name: 'Run setup and check the result'
+        run: task --exit-code --yes test:smoke
