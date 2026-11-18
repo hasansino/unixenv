@@ -14,6 +14,7 @@ alias bat="bat -p --theme OneHalfDark"
 alias cnt="ls | wc -l"
 alias btm="btm -C ~/.config/btm.toml --autohide_time"
 alias hf="hyperfine --warmup 3 --shell bash"
+alias ss="pipes.sh"
 
 make() {
     if [ -f "_Makefile" ]; then

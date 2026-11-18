@@ -42,6 +42,7 @@ brew "tig"
 brew "gonzo"
 brew "tlrc"
 brew "nushell"
+brew "pipes-sh"
 
 # genai
 cask "claude-code"
