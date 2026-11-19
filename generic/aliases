@@ -14,7 +14,6 @@ alias bat="bat -p --theme OneHalfDark"
 alias cnt="ls | wc -l"
 alias btm="btm -C ~/.config/btm.toml --autohide_time"
 alias hf="hyperfine --warmup 3 --shell bash"
-alias ss="pipes.sh"
 
 make() {
     if [ -f "_Makefile" ]; then
@@ -31,6 +30,21 @@ make() {
     else
         command make "$@"
     fi
+}
+
+# screensavers: each run starts a random one
+# picked with set/shift: no arrays here, and no subshell, where zsh repeats $RANDOM
+ss() {
+    set -- "pipes.sh" "cbonsai -l -i" "astroterm -c -C -u -q -s 1000"
+    shift $((RANDOM % $#))
+    eval "$1"
+}
+ssrs() {
+    set -- life maze boids cube crab donut pipes fire plasma constellation butterfly
+    shift $((RANDOM % $#))
+    set -- "tarts $1" "pipes-rs" "weathr"
+    shift $((RANDOM % $#))
+    eval "$1"
 }
 
 # git

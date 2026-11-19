@@ -42,7 +42,14 @@ brew "tig"
 brew "gonzo"
 brew "tlrc"
 brew "nushell"
+
+# rust: setup installs cargo packages with it
+brew "rust"
+
+# screensavers: aliases ss and ssrs
 brew "pipes-sh"
+brew "cbonsai"
+brew "astroterm"
 
 # genai
 cask "claude-code"
