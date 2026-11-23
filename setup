@@ -137,7 +137,7 @@ packages() {
     brew bundle --file="$CLONE_DIR/etc/Brewfile"
     uv tool install -U --python 3.13 posting
     # screensavers for alias `ssrs`; cargo skips crates that are already up to date
-    cargo install --locked tarts weathr
+    cargo install --locked weathr
     cargo install --locked --git https://github.com/lhvy/pipes-rs pipes-rs
 }
 

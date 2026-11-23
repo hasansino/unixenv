@@ -40,9 +40,7 @@ ss() {
     eval "$1"
 }
 ssrs() {
-    set -- life maze boids cube crab donut pipes fire plasma constellation butterfly
-    shift $((RANDOM % $#))
-    set -- "tarts $1" "pipes-rs" "weathr"
+    set -- "pipes-rs" "weathr"
     shift $((RANDOM % $#))
     eval "$1"
 }
