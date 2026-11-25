@@ -124,7 +124,7 @@ alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'
 alias gogek='docker run --rm -it -p 8888:8080 ghcr.io/hasansino/gogek:latest'
 
 # genai
-alias clauded='claude --dangerously-skip-permissions'
+alias clauded='nice -n 10 claude --dangerously-skip-permissions'
 alias crushed='crush -y'
 alias coded='codex --dangerously-bypass-approvals-and-sandbox'
 alias agyd='agy --dangerously-skip-permissions'

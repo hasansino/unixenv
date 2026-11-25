@@ -18,6 +18,9 @@ export GPG_TTY
 export HOMEBREW_NO_ANALYTICS=1
 export HOMEBREW_NO_ENV_HINTS=1
 
+# Build and test at most 6 Go packages at once, leaving cores for interactive work.
+export GOFLAGS=-p=6
+
 export FZF_DEFAULT_OPTS="--preview 'bat --color=always {} --style=numbers {}'"
 export EZA_CONFIG_DIR="$HOME/.config/eza"
 
