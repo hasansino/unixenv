@@ -4,6 +4,8 @@ min_version = "2026.10.21"
 lockfile = true
 exec_auto_install = false
 disable_update_warning = true
+# Downloads are cached per project under .tools/cache; keep enough for reinstalls, not the 2GiB default.
+download_cache_max_size = "512MiB"
 
 [tool_alias]
 jsonfmt = "github:caarlos0/jsonfmt"
@@ -15,5 +17,5 @@ jq = "1.8.2"
 jsonfmt = "0.5.2"
 shellcheck = "0.11.0"
 shfmt = "3.14.1"
-tombi = "1.5.4"
+tombi = "1.11.1"
 yamlfmt = "0.21.0"

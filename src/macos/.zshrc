@@ -12,7 +12,7 @@ if [ -x /opt/homebrew/bin/brew ]; then
     compinit -i
 fi
 
-# --no-cmd keeps z and zi from generic/rc
+# --no-cmd keeps z and zi from src/generic/rc
 eval "$(zoxide init zsh --no-cmd)"
 eval "$(navi widget zsh)"
 eval "$(gh completion -s zsh)"

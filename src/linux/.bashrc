@@ -20,7 +20,7 @@ if type brew &> /dev/null; then
     done
 fi
 
-# --no-cmd keeps z and zi from generic/rc
+# --no-cmd keeps z and zi from src/generic/rc
 eval "$(zoxide init bash --no-cmd)"
 eval "$(navi widget bash)"
 eval "$(gh completion -s bash)"

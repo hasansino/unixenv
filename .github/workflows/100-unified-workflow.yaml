@@ -27,39 +27,80 @@ concurrency:
 
 jobs:
 
-  # stage 1: linting
+  gate-start:
+    name: gate-start
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start full CI
+        run: echo "Full CI started."
+
+  # stage 1: linting and security scans run in parallel
 
   lint:
     uses: ./.github/workflows/110-lint.yaml
     permissions:
       contents: read
+    needs:
+      - gate-start
     with:
       runs_on: ubuntu-latest
       continue_on_error: false
       timeout_minutes: 10
-
-  # stage 2: security scans
 
   security:
     uses: ./.github/workflows/120-security.yaml
     permissions:
       contents: read
     needs:
-      - lint
+      - gate-start
     with:
       runs_on: ubuntu-latest
       continue_on_error: false
       timeout_minutes: 10
 
-  # stage 3: run setup on fresh runners
+  # stage 2: run setup on fresh runners after the cheap checks pass
 
   smoke-test:
     uses: ./.github/workflows/130-smoke-test.yaml
     permissions:
       contents: read
     needs:
+      - lint
       - security
     with:
       runs_on: '["ubuntu-latest", "macos-latest"]'
       continue_on_error: false
       timeout_minutes: 45
+
+  # stage 3: required finish gate
+
+  gate-finish:
+    name: gate-finish
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - gate-start
+      - lint
+      - security
+      - smoke-test
+    steps:
+      - name: 'Require all blocking jobs to succeed'
+        env:
+          GATE_START_RESULT: ${{ needs.gate-start.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          SMOKE_TEST_RESULT: ${{ needs.smoke-test.result }}
+        run: |-
+          echo "gate-start: $GATE_START_RESULT"
+          echo "lint: $LINT_RESULT"
+          echo "security: $SECURITY_RESULT"
+          echo "smoke-test: $SMOKE_TEST_RESULT"
+          if [ "$GATE_START_RESULT" != 'success' ] || \
+            [ "$LINT_RESULT" != 'success' ] || \
+            [ "$SECURITY_RESULT" != 'success' ] || \
+            [ "$SMOKE_TEST_RESULT" != 'success' ]; then
+            echo '::error::One or more blocking CI jobs did not succeed.'
+            exit 1
+          fi

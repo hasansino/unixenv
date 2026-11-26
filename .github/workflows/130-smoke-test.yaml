@@ -43,8 +43,6 @@ jobs:
       # setup installs its own packages with brew; the smoke test only needs Task.
       - name: 'Install Task'
         uses: ./.github/actions/setup-tools
-        with:
-          cache: 'false'
       # Homebrew is preinstalled on Linux runners but not on PATH; setup requires it.
       - name: 'Put Homebrew on PATH'
         if: runner.os == 'Linux'

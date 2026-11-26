@@ -29,12 +29,13 @@ set:
   - pipefail
 
 vars:
-  # Sourced bash dotfiles have no shebang; setup also joins generic/* into the zsh files.
-  BASH_SOURCED_FILES: generic/aliases generic/rc linux/.bash_aliases linux/.bash_profile linux/.bashrc
-  ZSH_FILES: macos/.zprofile macos/.zshrc macos/.zsh_aliases
+  # Sourced bash dotfiles have no shebang; setup also joins src/generic/* into the zsh files.
+  BASH_SOURCED_FILES: >-
+    src/generic/aliases src/generic/rc src/linux/.bash_aliases src/linux/.bash_profile src/linux/.bashrc
+  ZSH_FILES: src/macos/.zprofile src/macos/.zshrc src/macos/.zsh_aliases
   SHFMT_FLAGS: -i 4 -ci -sr -bn
   # Exported by applications: checked for valid JSON only, never reformatted.
-  JSON_EXPORTS: macos/.config/iterm2.profile.json
+  JSON_EXPORTS: src/macos/.config/iterm2.profile.json
 
 env:
   MISE_DEFAULT_CONFIG_FILENAME: etc/mise.toml
@@ -67,6 +68,10 @@ tasks:
           "MISE_STATE_DIR=$MISE_STATE_DIR" \
           "TASK_TEMP_DIR=$TASK_TEMP_DIR"
 
+  # ╭────────────────────----------------──────────╮
+  # │                   Tooling                    │
+  # ╰─────────────────────----------------─────────╯
+
   tool:
     desc: "Run a command with the project tools"
     summary: |-
@@ -79,23 +84,11 @@ tasks:
     cmds:
       - 'mise exec -- {{.CLI_ARGS}}'
 
-  # ╭────────────────────----------------──────────╮
-  # │                    Setup                     │
-  # ╰─────────────────────----------------─────────╯
-
-  setup:
-    desc: "Install pinned project tools"
-    summary: |-
-      Usage: task setup
-      Installs into .tools/; mise and Task must already be installed.
-    cmds:
-      - "mise install --locked"
-
-  bump:
+  tool:update:
     desc: "Set a mise tool dependency to a version (writes)"
     summary: |-
-      Usage: task bump TOOL=<tool> VERSION=<version>
-      Installs the selected tool version and updates etc/mise.toml and etc/mise.lock.
+      Usage: task tool:update TOOL=<tool> VERSION=<version>
+      Installs the selected tool version, updates etc/mise.toml and etc/mise.lock, and removes its unused versions.
     requires:
       vars:
         - TOOL
@@ -108,6 +101,27 @@ tasks:
     cmds:
       - 'mise use --pin -- {{printf "%s@%s" .TOOL .VERSION | shellQuote}}'
       - 'mise lock -- {{.TOOL | shellQuote}}'
+      - 'mise prune --tools --yes -- {{.TOOL | shellQuote}}'
+
+  setup:
+    desc: "Install pinned project tools"
+    summary: |-
+      Usage: task setup
+      Installs into .tools/; mise and Task must already be installed.
+      Then runs setup:tidy, so versions replaced by new pins do not accumulate.
+    cmds:
+      - "mise install --locked"
+      - task: setup:tidy
+
+  setup:tidy:
+    desc: "Remove unused tool versions and stale cache files from .tools/ (writes)"
+    summary: |-
+      Usage: task setup:tidy [DRY_RUN=1]
+      Deletes installed versions that no tracked mise configuration selects, then cache files not read within
+      cache_prune_age. Versions used by running processes are kept. DRY_RUN=1 lists what would be removed.
+    cmds:
+      - 'mise prune --tools --yes{{if .DRY_RUN}} --dry-run{{end}}'
+      - 'mise cache prune{{if .DRY_RUN}} --dry-run{{end}}'
 
   # ╭────────────────────----------------──────────╮
   # │                   Testing                    │
@@ -315,14 +329,14 @@ tasks:
       Uses the system git and ssh, which parse each file and fail on malformed lines or unknown options.
     cmds:
       - |
-        for file in generic/.config/.gitconfig generic/.config/.gitconfig.gpg; do
+        for file in src/generic/.config/.gitconfig src/generic/.config/.gitconfig.gpg; do
           printf 'Checking %s\n' "$file"
           git config --file "$file" --list > /dev/null
         done
       - |
-        printf 'Checking %s\n' generic/.config/.ssh/config
+        printf 'Checking %s\n' src/generic/.config/.ssh/config
         # -G prints the resolved settings without connecting; -T skips the pseudo-terminal notice.
-        ssh -T -G -F generic/.config/.ssh/config example.invalid < /dev/null > /dev/null
+        ssh -T -G -F src/generic/.config/.ssh/config example.invalid < /dev/null > /dev/null
 
   lint:secrets:
     desc: "Scan Git history, or explicit files, for secrets with Gitleaks"

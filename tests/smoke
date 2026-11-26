@@ -108,7 +108,7 @@ compgen -G "$SMOKE_HOME/$FONT_DIR/*Cascadia*.ttf" > /dev/null || fail "Cascadia 
 if [ "$(tail -n 1 "$SMOKE_HOME/.gitconfig.bak" 2> /dev/null)" != "$LOCAL_EDIT" ]; then
     fail "the local edit was not backed up to ~/.gitconfig.bak"
 fi
-cmp -s "$REPO_DIR/generic/.config/.gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
+cmp -s "$REPO_DIR/src/generic/.config/.gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
 
 # A bare PATH proves the shell files put brew on PATH themselves.
 echo "==> starting a login interactive $LOGIN_SHELL"
