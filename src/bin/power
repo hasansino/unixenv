@@ -1,7 +1,14 @@
 #!/bin/bash
-# power.sh — toggle macOS sleep behavior
+# power: toggle macOS deep sleep (standby and autopoweroff); macOS only, linked by setup there.
+#
+# Usage: power on|off
 
-case "$1" in
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "power: macOS only (uses pmset)" >&2
+    exit 1
+fi
+
+case "${1:-}" in
     on)
         echo "⚡ Enabling performance mode (no standby/autopoweroff)"
         sudo pmset -a standby 0
@@ -13,7 +20,7 @@ case "$1" in
         sudo pmset -a autopoweroff 1
         ;;
     *)
-        echo "Usage: $0 {on|off}"
+        echo "Usage: power on|off" >&2
         exit 1
         ;;
 esac

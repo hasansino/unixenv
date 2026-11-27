@@ -61,6 +61,19 @@
 |------------------------------------------|-------------------------------------------|
 | `clauded` · `coded` · `agyd` · `crushed` | Claude Code · Codex · Antigravity · Crush |
 
+## 🌐 Remote hosts
+
+| Command                                 | What it does                                                                                      |
+|-----------------------------------------|---------------------------------------------------------------------------------------------------|
+| `hop server`                            | session "main" over mosh if possible, else ssh; in zellij, tmux or screen, whichever the host has |
+| `hop --ssh server`                      | skip mosh, e.g. when the host's firewall blocks UDP 60000-61000                                   |
+| `Enter` then `~.`                       | end a frozen ssh session immediately                                                              |
+| `Ctrl-^` then `.`                       | quit a mosh that hangs on "Connecting…"                                                           |
+| `term-reset`                            | fix a window that prints garbage on mouse moves; keeps the scrollback, unlike `reset`             |
+| `Ctrl-B` then `p` · `t` · `s` · `o`     | zellij: panes · tabs · scroll and search · sessions                                               |
+| `Ctrl-B` `p` then `r` · `d` · `x` · `f` | zellij pane: new right · new below · close · fullscreen                                           |
+| `Ctrl-B` `o` then `d`                   | leave zellij; the session keeps running                                                           |
+
 ## 🧰 Tools
 
 | Command                       | What it does                                    |
@@ -75,12 +88,13 @@
 
 ## ⚡ Automatic
 
-| Feature | What it does                                                  |
-|---------|---------------------------------------------------------------|
-| direnv  | a folder's .envrc loads on cd; approve with `direnv allow`    |
-| history | 100k lines shared by all shells; a leading space skips saving |
-| ssh     | connections to a host are reused for 10 minutes               |
-| nano    | each save keeps a backup in ~/.local/state/nano/backups       |
+| Feature | What it does                                                     |
+|---------|------------------------------------------------------------------|
+| direnv  | a folder's .envrc loads on cd; approve with `direnv allow`       |
+| history | 100k lines shared by all shells; a leading space skips saving    |
+| ssh     | connections to a host are reused for 10 minutes                  |
+| ssh     | a dead link drops after ~45 s; the terminal is reset after drops |
+| nano    | each save keeps a backup in ~/.local/state/nano/backups          |
 
 ## 🛠 Your settings (setup never overwrites)
 
@@ -93,11 +107,11 @@
 
 ## 🎲 Misc
 
-| Command                  | What it does                               |
-|--------------------------|--------------------------------------------|
-| `cheat` · `unixenv`      | this page · re-run setup                   |
-| `ss` · `ssrs`            | screensaver                                |
-| `power on` · `power off` | macOS deep sleep off · back on (sudo)      |
-| `back-opt` · `rmdsstore` | archive /opt · delete .DS_Store under /opt |
-| `gogh` · `gogek`         | terminal color schemes · gogek on :8888    |
-| `c` · `xx` · `..`        | clear · exit · cd ..                       |
+| Command                  | What it does                              |
+|--------------------------|-------------------------------------------|
+| `cheat` · `unixenv`      | this page · re-run setup                  |
+| `ss` · `ssrs`            | screensaver                               |
+| `power on` · `power off` | macOS deep sleep off · back on (sudo)     |
+| `rmdsstore`              | delete .DS_Store under /opt (macOS, sudo) |
+| `gogh` · `gogek`         | terminal color schemes · gogek on :8888   |
+| `c` · `xx` · `..`        | clear · exit · cd ..                      |

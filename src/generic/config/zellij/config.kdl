@@ -1,0 +1,12 @@
+// zellij settings, installed by setup to ~/.config/zellij/config.kdl.
+// Settings not listed here keep zellij's defaults; `zellij setup --dump-config` prints them all.
+
+// Unlock-first: every key goes to the programs inside zellij until Ctrl-B, after which the next
+// key is a zellij command (shown in the bottom bar). The default preset would take Ctrl-O (nano's
+// save), Ctrl-T (fzf file picker), Ctrl-G (navi) and more. Ctrl-B is also tmux's prefix.
+keybinds preset="unlock-first" unlock="Ctrl b" {
+}
+
+// no tips or release notes popping up when a session starts
+show_startup_tips false
+show_release_notes false

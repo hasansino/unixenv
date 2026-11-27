@@ -237,6 +237,8 @@ configs() {
     install_config "$CLONE_DIR/src/generic/config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
     # ripgrep, through RIPGREP_CONFIG_PATH in the shell rc
     install_config "$CLONE_DIR/src/generic/config/ripgrep/config" "$HOME/.config/ripgrep/config"
+    # zellij for local use; hop passes the same keys on the command line, so hosts need no config
+    install_config "$CLONE_DIR/src/generic/config/zellij/config.kdl" "$HOME/.config/zellij/config.kdl"
     # generic
     touch "$HOME/.hushlogin"
     # a bit more complicated cases
@@ -329,10 +331,11 @@ config_mc() {
 scripts() {
     mkdir -p "$HOME/.local/bin"
     ln -sf "$CLONE_DIR/src/bin/goenv-scp" "$HOME/.local/bin/goenv-scp" # alias `goenv`
-    ln -sf "$CLONE_DIR/src/bin/back-opt" "$HOME/.local/bin/back-opt"
     ln -sf "$CLONE_DIR/src/bin/cheat" "$HOME/.local/bin/cheat"
+    ln -sf "$CLONE_DIR/src/bin/hop" "$HOME/.local/bin/hop"
+    ln -sf "$CLONE_DIR/src/bin/term-reset" "$HOME/.local/bin/term-reset"
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        ln -sf "$CLONE_DIR/src/macos/power" "$HOME/.local/bin/power"
+        ln -sf "$CLONE_DIR/src/bin/power" "$HOME/.local/bin/power"
     fi
 }
 

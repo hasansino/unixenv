@@ -48,12 +48,13 @@ INSTALLED_FILES=(
     .config/htop/htoprc
     .config/eza/theme.yml
     .config/ripgrep/config
+    .config/zellij/config.kdl
     .config/mc/ini
     .config/mc/mc.ext.ini
     .docker/config.json
     .hushlogin
 )
-LINKED_SCRIPTS=(goenv-scp back-opt cheat)
+LINKED_SCRIPTS=(goenv-scp cheat hop term-reset)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     LINKED_SCRIPTS+=(power)
 fi

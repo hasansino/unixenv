@@ -20,6 +20,18 @@ alias fd="fd --hidden --exclude .git"
 # re-run setup from anywhere
 alias unixenv='"$HOME/unixenv/setup"'
 
+# ssh exits with 255 when the connection fails; then term-reset (src/bin) turns off the modes remote
+# apps left on, which otherwise make every mouse move print escape codes.
+function ssh {
+    command ssh "$@"
+    # not "status": zsh reserves that name for the exit code
+    local exit_code=$?
+    if [ "$exit_code" -eq 255 ] && command -v term-reset > /dev/null 2>&1; then
+        term-reset
+    fi
+    return "$exit_code"
+}
+
 # mc through its wrapper, so quitting leaves the shell in mc's last directory
 function mc {
     local wrapper

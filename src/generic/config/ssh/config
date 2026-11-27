@@ -4,7 +4,9 @@ Include config_hosts
 
 Host *
     TCPKeepAlive yes
-    ServerAliveInterval 60
+    # a dead link (Wi-Fi or hotspot gone) is dropped after 3 unanswered checks 15 s apart, about 45 s;
+    # this also frees the shared connection below, which new sessions to that host would otherwise hang on
+    ServerAliveInterval 15
     ServerAliveCountMax 3
     ConnectTimeout 10
     StrictHostKeyChecking accept-new

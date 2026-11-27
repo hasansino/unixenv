@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Connect to a host and land in a session that survives connection drops.
+#
+# How `hop server` decides, from the tools it finds; the host needs no configuration:
+#
+#   Connection                                       Result
+#   mosh installed here and mosh-server on the host  mosh
+#   mosh fails (blocked, locale...)                  says why, then ssh into the same session
+#   no mosh here, no mosh-server, or `hop --ssh`     ssh
+#   host unreachable                                 "cannot reach host over ssh", exit 1
+#
+#   Session on the host (first one found)            Result
+#   zellij that supports key presets (recent ones)   zellij; keys passed here: Ctrl-B unlocks
+#   tmux                                             tmux (an older zellij is skipped: its default
+#                                                    keys would take Ctrl-T, Ctrl-O, Ctrl-G...)
+#   screen                                           screen
+#   none                                             plain shell, with a warning
+#
+# The session is always named "main", so running hop again reattaches to it.
+# When mosh hangs on "Connecting..." (UDP blocked), press Ctrl-^ then . and run `hop --ssh host`.
+#
+# Usage: hop [--ssh] [user@]host
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: hop [--ssh] [user@]host" >&2
+    exit 2
+}
+
+force_ssh=false
+if [ "${1:-}" = "--ssh" ]; then
+    force_ssh=true
+    shift
+fi
+[ $# -eq 1 ] || usage
+case "$1" in -*) usage ;; esac
+host="$1"
+
+# Remote commands run in a non-interactive shell, which on Ubuntu stops reading .bashrc before
+# unixenv's block puts brew on PATH, so add the usual install locations here.
+# Every remote snippet runs under sh -c, so the login shell (bash, zsh, old csh) does not matter.
+# Snippets are single lines (csh rejects line breaks inside quotes) without single quotes,
+# because they are wrapped in them.
+# shellcheck disable=SC2016 # expands on the host, not here
+remote_path='PATH="$HOME/.local/bin:/home/linuxbrew/.linuxbrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH'
+tmux_chain='if command -v tmux >/dev/null 2>&1; then tmux attach -t main 2>/dev/null || exec tmux new -s main; exit; fi;'
+tmux_chain+=' if command -v screen >/dev/null 2>&1; then exec screen -D -R -S main; fi;'
+tmux_chain+=' echo "hop: no tmux or screen on this host; plain shell, nothing survives a drop" >&2;'
+# shellcheck disable=SC2016 # expands on the host, not here
+tmux_chain+=' exec "${SHELL:-/bin/sh}" -l'
+# The same keys as src/generic/config/zellij/config.kdl, given on the command line so a host
+# needs no zellij config. Older zellij has no key presets, so it would use its default keys.
+# The check is a shell pattern, so the host needs nothing beyond sh and zellij.
+# shellcheck disable=SC2016 # expands on the host, not here
+zellij_chain='if command -v zellij >/dev/null 2>&1; then case "$(zellij options --help 2>/dev/null)" in *--keybinds-unlock*)'
+zellij_chain+=' exec zellij attach -c main options --keybinds-preset unlock-first --keybinds-unlock "Ctrl b"'
+zellij_chain+=' --show-startup-tips false --show-release-notes false;; esac; fi;'
+session="$remote_path; $zellij_chain $tmux_chain"
+
+# One quick look at the host; it reuses the shared ssh connection when one is open.
+probe="$remote_path; m=0; command -v mosh-server >/dev/null 2>&1 && m=1; echo \"hop-probe mosh=\$m\""
+if ! facts=$(ssh -o BatchMode=no "$host" "sh -c '$probe'" 2> /dev/null | grep '^hop-probe '); then
+    echo "hop: cannot reach $host over ssh" >&2
+    exit 1
+fi
+has_mosh_server=false
+case "$facts" in *mosh=1*) has_mosh_server=true ;; esac
+
+# After a dropped ssh connection the terminal keeps modes the remote apps enabled (mouse reporting,
+# alternate screen, ...). term-reset sits next to hop, both in src/bin and in ~/.local/bin.
+connect_ssh() {
+    local code=0
+    ssh -t "$host" "sh -c '$session'" || code=$?
+    if [ "$code" -eq 255 ]; then
+        "$(dirname "$0")/term-reset"
+    fi
+    return "$code"
+}
+
+if [ "$force_ssh" = false ]; then
+    if ! command -v mosh > /dev/null 2>&1; then
+        echo "hop: mosh is not installed here; using ssh" >&2
+    elif [ "$has_mosh_server" = false ]; then
+        echo "hop: no mosh-server on $host; using ssh" >&2
+    else
+        echo "hop: mosh to $host" >&2
+        # mosh-server refuses to start without a UTF-8 locale; C.UTF-8 exists on every current Linux.
+        # As a prefix, LC_ALL reaches mosh-server's environment (mosh appends its own arguments).
+        if mosh --server="$remote_path; LC_ALL=C.UTF-8 mosh-server" "$host" -- sh -c "$session"; then
+            exit 0
+        fi
+        echo "hop: mosh could not connect (see above); falling back to ssh" >&2
+    fi
+fi
+
+echo "hop: ssh to $host" >&2
+connect_ssh
