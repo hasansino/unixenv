@@ -77,14 +77,16 @@
 
 ## Tools
 
-| Command                       | What it does                                    |
-|-------------------------------|-------------------------------------------------|
-| `mc`                          | file manager; quitting leaves you in its folder |
-| `broot`                       | tree navigator; `broot --install` adds `br`     |
-| `dc logs -f \| gonzo`         | log analysis UI                                 |
-| `posting`                     | HTTP client UI                                  |
-| `jq` · `yq`                   | query JSON · YAML                               |
-| `hf 'cmd'` · `watch -n 5 cmd` | benchmark · repeat a command                    |
+| Command                       | What it does                                                       |
+|-------------------------------|--------------------------------------------------------------------|
+| `mc`                          | file manager; quitting leaves you in its folder                    |
+| `broot`                       | tree navigator; `broot --install` adds `br`                        |
+| `dc logs -f \| gonzo`         | log analysis UI                                                    |
+| `posting`                     | HTTP client UI                                                     |
+| `jq` · `yq`                   | query JSON · YAML                                                  |
+| `hf 'cmd'` · `watch -n 5 cmd` | benchmark · repeat a command                                       |
+| `gping host1 host2`           | live ping graph, several hosts side by side                        |
+| `sudo trip host`              | live traceroute: loss and latency per hop; `-u` tries without sudo |
 
 ## Automatic
 

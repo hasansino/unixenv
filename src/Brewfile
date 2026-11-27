@@ -42,7 +42,9 @@ brew "yq"
 
 # monitoring
 brew "bottom"
+brew "gping"
 brew "htop"
+brew "trippy"
 
 # containers
 brew "helm"

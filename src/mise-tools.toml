@@ -36,7 +36,9 @@ yq = "latest"
 
 # monitoring
 bottom = "latest"
+gping = "latest"
 "conda:htop" = "latest"
+"github:fujiapple852/trippy" = "latest"
 
 # containers
 helm = "latest"

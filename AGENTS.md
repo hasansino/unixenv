@@ -12,8 +12,8 @@
   the same order, sorted within each section, no explanatory comments. Facts to keep in
   mind instead: `mise-tools.toml` must not be named `mise.toml` (mise would load it as the
   project config inside `src/`); `conda:mc` is Midnight Commander, while plain `mc` in
-  mise's registry is MinIO's client; navi has no macOS build and trash-cli is Linux-only,
-  hence their `os` limits.
+  mise's registry is MinIO's client; trippy is not in mise's registry, hence `github:`;
+  navi has no macOS build and trash-cli is Linux-only, hence their `os` limits.
 - Setup installs software only through Homebrew or mise, which verify what they download; it
   never fetches files itself or pipes a download into a shell. The one exception: setup.light
   runs the official mise installer from mise.run, which verifies the mise it installs.
