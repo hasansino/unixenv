@@ -1,73 +1,66 @@
-# Packages installed by setup on darwin and linux.
+# Packages for setup (Homebrew).
 # @see https://docs.brew.sh/Brew-Bundle-and-Brewfile
 
-brew "ca-certificates"
+tap "charmbracelet/tap"
 
 # basics
-brew "wget"
+brew "git"
+brew "gnupg"
 brew "nano"
-brew "htop"
-brew "watch"
+brew "trash-cli" if OS.linux?
 brew "unzip"
+brew "watch"
+brew "wget"
 
-# shell and files
-brew "zoxide"
-brew "fzf"
-brew "eza"
+# shell
 brew "bat"
 brew "broot"
-brew "midnight-commander"
-brew "navi"
-brew "dust"
-brew "fd"
-brew "ripgrep"
 brew "direnv"
-brew "hyperfine"
-# macOS ships /usr/bin/trash
-brew "trash-cli" if OS.linux?
-
-# zsh plugins, sourced by zshrc; linux uses bash
+brew "dust"
+brew "eza"
+brew "fd"
+brew "fzf"
+brew "navi"
+brew "ripgrep"
+brew "starship"
+brew "zoxide"
 brew "zsh-autosuggestions" if OS.mac?
 brew "zsh-syntax-highlighting" if OS.mac?
 
+# tools
+brew "gh"
+brew "git-delta"
+brew "glow"
+brew "gonzo"
+brew "hyperfine"
+brew "jq"
+brew "midnight-commander"
+brew "tig"
+brew "tlrc"
+brew "uv"
+brew "yq"
+
 # monitoring
 brew "bottom"
+brew "htop"
 
 # containers
-brew "kubectl"
-brew "k9s"
 brew "helm"
+brew "k9s"
+brew "kubectl"
 
-# tools
-brew "uv"
-brew "git"
-brew "gh"
-brew "gnupg"
-brew "jq"
-brew "yq"
-brew "starship"
-brew "glow"
-brew "diff-so-fancy"
-brew "tig"
-# remote sessions for `hop`: mosh survives connection drops, zellij keeps the session (src/bin/hop)
+# remote sessions
 brew "mosh"
+brew "tmux"
 brew "zellij"
-brew "gonzo"
-brew "tlrc"
-brew "nushell"
 
-# rust: setup installs cargo packages with it
-brew "rust"
-
-# screensavers: aliases ss and ssrs
-brew "pipes-sh"
-brew "cbonsai"
+# screensavers
 brew "astroterm"
+brew "cbonsai"
+brew "pipes-sh"
 
 # genai
+brew "charmbracelet/tap/crush"
+cask "antigravity-cli"
 cask "claude-code"
 cask "codex"
-cask "antigravity-cli"
-# crush is not in homebrew-core; Charm publishes it in its own tap (setup trusts this one formula)
-tap "charmbracelet/tap"
-brew "charmbracelet/tap/crush"

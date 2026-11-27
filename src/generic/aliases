@@ -17,8 +17,14 @@ alias btm="btm -C ~/.config/btm.toml --autohide_time"
 alias hf="hyperfine --warmup 3 --shell bash"
 # dotfiles too; .gitignore rules still apply, and .git itself stays out
 alias fd="fd --hidden --exclude .git"
-# re-run setup from anywhere
-alias unixenv='"$HOME/unixenv/setup"'
+# re-run setup from anywhere: setup.light where it installed its tool list (no Homebrew), setup otherwise
+function unixenv {
+    if [ -f "$HOME/.config/mise/conf.d/unixenv.toml" ]; then
+        "$HOME/unixenv/setup.light" "$@"
+    else
+        "$HOME/unixenv/setup" "$@"
+    fi
+}
 
 # ssh exits with 255 when the connection fails; then term-reset (src/bin) turns off the modes remote
 # apps left on, which otherwise make every mouse move print escape codes.
@@ -32,14 +38,16 @@ function ssh {
     return "$exit_code"
 }
 
-# mc through its wrapper, so quitting leaves the shell in mc's last directory
+# mc that leaves the shell in mc's last folder when you quit, like mc's own wrapper script but
+# without its install path: mc -P writes that folder to a file, whichever way mc was installed
 function mc {
-    local wrapper
-    wrapper="${HOMEBREW_PREFIX:-$(brew --prefix)}/opt/midnight-commander/libexec/mc/mc-wrapper.sh"
-    if [ -f "$wrapper" ]; then
-        . "$wrapper" "$@"
-    else
-        command mc "$@"
+    local last_dir_file last_dir
+    last_dir_file=$(mktemp)
+    command mc -P "$last_dir_file" "$@"
+    last_dir=$(cat "$last_dir_file" 2> /dev/null)
+    rm -f "$last_dir_file"
+    if [ -n "$last_dir" ] && [ -d "$last_dir" ] && [ "$last_dir" != "$PWD" ]; then
+        cd "$last_dir" || return
     fi
 }
 
@@ -122,7 +130,7 @@ alias gotest='go test -race ./...'
 alias gobench='go test -bench=.'
 
 # external scripts
-alias gogh='bash -c  "$(curl -sLo- https://git.io/vQgMr)"'
+alias gogh='bash -c "$(curl -fsSL https://gogh.website/gogh)"'
 
 # extra
 alias gogek='docker run --rm -it -p 8888:8080 ghcr.io/hasansino/gogek:latest'

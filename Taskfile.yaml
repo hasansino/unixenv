@@ -29,10 +29,18 @@ set:
   - pipefail
 
 vars:
-  # Sourced bash dotfiles have no shebang; setup also joins src/generic/* into the zsh files.
+  # Sourced bash files (dotfiles, src/setup/lib.sh) have no shebang; setup also joins src/generic/* into the zsh files.
   BASH_SOURCED_FILES: >-
-    src/generic/aliases src/generic/rc src/linux/bash_aliases src/linux/bash_profile src/linux/bashrc
-  ZSH_FILES: src/macos/zprofile src/macos/zshrc src/macos/zsh_aliases
+    src/generic/aliases
+    src/generic/rc
+    src/linux/bash_aliases
+    src/linux/bash_profile
+    src/linux/bashrc
+    src/setup/lib.sh
+  ZSH_FILES: >-
+    src/macos/zprofile
+    src/macos/zshrc
+    src/macos/zsh_aliases
   SHFMT_FLAGS: -i 4 -ci -sr -bn
 
 env:
@@ -135,6 +143,34 @@ tasks:
     prompt: "test:smoke runs setup, which installs brew packages and casks globally. Continue?"
     cmds:
       - "bash tests/smoke"
+
+  test:smoke:light:
+    desc: "Run setup.light against a throwaway HOME and check the result (downloads about 1 GB)"
+    summary: |-
+      Usage: task test:smoke:light
+      Runs `setup.light --no-update` twice with HOME in a temporary directory and checks the result like
+      test:smoke, plus mise and its tools. Everything, mise included, is written inside that HOME.
+      CI runs it with `task --yes test:smoke:light`.
+    cmds:
+      - "bash tests/smoke --light"
+
+  check:pins:
+    desc: "Report newer releases for the downloads pinned in src/pinned/pinned.toml (read only)"
+    summary: |-
+      Usage: task check:pins
+      Asks GitHub for each pinned project's latest release. For a newer one it downloads the files into a
+      temporary folder and prints the src/pinned/pinned.toml sections with the new checksums, ready to paste.
+    cmds:
+      - "bash src/pinned/check-pins"
+
+  test:hop:
+    desc: "Check hop's choices with fake ssh and mosh (read only, no network)"
+    summary: |-
+      Usage: task test:hop
+      Runs src/bin/hop against a fake host: mosh or ssh, the fallbacks, and which session tool it picks,
+      with sh and (where installed) csh as the host's login shell. Nothing outside a temporary directory.
+    cmds:
+      - "bash tests/hop"
 
   # ╭────────────────────----------------──────────╮
   # │                  Formatters                  │

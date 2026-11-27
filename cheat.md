@@ -1,6 +1,6 @@
-# 🧭 unixenv cheat
+# unixenv cheat
 
-## 🔁 Files and search
+## Files and search
 
 | Command                | What it does                                           |
 |------------------------|--------------------------------------------------------|
@@ -16,7 +16,7 @@
 | `glow -p file.md`      | render markdown                                        |
 | `cnt` · `path`         | count files here · PATH one per line                   |
 
-## ⌨️ Keys
+## Keys
 
 | Key                       | What it does                                      |
 |---------------------------|---------------------------------------------------|
@@ -27,17 +27,18 @@
 | `→`                       | accept the history suggestion (zsh)               |
 | `'exact ^start end$ !not` | fzf search syntax; space means AND                |
 
-## 🌿 Git
+## Git
 
-| Command                           | What it does                                                      |
-|-----------------------------------|-------------------------------------------------------------------|
-| `gs` · `gb` · `gl` · `gco` · `ga` | status · branches · graph log · checkout · add .                  |
-| `grb 3`                           | rebase the last 3 commits, stashing local changes                 |
-| `git commit --fixup=<sha>`        | the next `grb` squashes it into that commit                       |
-| `tig` · `gh pr create`            | history browser · GitHub CLI                                      |
-| automatic                         | zdiff3 conflicts · rerere · diff-so-fancy · recent branches first |
+| Command                           | What it does                                                                                              |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `gs` · `gb` · `gl` · `gco` · `ga` | status · branches · graph log · checkout · add .                                                          |
+| `grb 3`                           | rebase the last 3 commits, stashing local changes                                                         |
+| `git commit --fixup=<sha>`        | the next `grb` squashes it into that commit                                                               |
+| `tig` · `gh pr create`            | history browser · GitHub CLI                                                                              |
+| automatic                         | zdiff3 conflicts · rerere · recent branches first                                                         |
+| diffs                             | delta: syntax colors and line numbers; `n` / `N` jump between files; side by side: `git diff \| delta -s` |
 
-## 🐳 Docker and Kubernetes
+## Docker and Kubernetes
 
 | Command                | What it does                                            |
 |------------------------|---------------------------------------------------------|
@@ -47,7 +48,7 @@
 | `k get pods` · `k9s`   | kubectl · cluster UI, both use ./.kubeconfig if present |
 | `helm list -A`         | Kubernetes packages                                     |
 
-## 🐹 Go
+## Go
 
 | Command                          | What it does                                            |
 |----------------------------------|---------------------------------------------------------|
@@ -55,13 +56,13 @@
 | `gotest` · `gobench` · `goclean` | race tests ./... · benchmarks · clear caches            |
 | `goinstall pkg@latest`           | go install bypassing the module proxy                   |
 
-## 🤖 AI agents (no permission prompts)
+## AI agents (no permission prompts)
 
 | Command                                  | What it does                              |
 |------------------------------------------|-------------------------------------------|
 | `clauded` · `coded` · `agyd` · `crushed` | Claude Code · Codex · Antigravity · Crush |
 
-## 🌐 Remote hosts
+## Remote hosts
 
 | Command                                 | What it does                                                                                      |
 |-----------------------------------------|---------------------------------------------------------------------------------------------------|
@@ -74,7 +75,7 @@
 | `Ctrl-B` `p` then `r` · `d` · `x` · `f` | zellij pane: new right · new below · close · fullscreen                                           |
 | `Ctrl-B` `o` then `d`                   | leave zellij; the session keeps running                                                           |
 
-## 🧰 Tools
+## Tools
 
 | Command                       | What it does                                    |
 |-------------------------------|-------------------------------------------------|
@@ -83,10 +84,9 @@
 | `dc logs -f \| gonzo`         | log analysis UI                                 |
 | `posting`                     | HTTP client UI                                  |
 | `jq` · `yq`                   | query JSON · YAML                               |
-| `nu`                          | Nushell                                         |
 | `hf 'cmd'` · `watch -n 5 cmd` | benchmark · repeat a command                    |
 
-## ⚡ Automatic
+## Automatic
 
 | Feature | What it does                                                     |
 |---------|------------------------------------------------------------------|
@@ -96,7 +96,7 @@
 | ssh     | a dead link drops after ~45 s; the terminal is reset after drops |
 | nano    | each save keeps a backup in ~/.local/state/nano/backups          |
 
-## 🛠 Your settings (setup never overwrites)
+## Your settings (setup never overwrites)
 
 | Where                        | What goes there                             |
 |------------------------------|---------------------------------------------|
@@ -105,13 +105,14 @@
 | `~/.zshrc`, `~/.zsh_aliases` | your lines outside the UNIXENV block        |
 | `*.<timestamp>.bak`          | the last 5 versions of each replaced config |
 
-## 🎲 Misc
+## Misc
 
-| Command                  | What it does                              |
-|--------------------------|-------------------------------------------|
-| `cheat` · `unixenv`      | this page · re-run setup                  |
-| `ss` · `ssrs`            | screensaver                               |
-| `power on` · `power off` | macOS deep sleep off · back on (sudo)     |
-| `rmdsstore`              | delete .DS_Store under /opt (macOS, sudo) |
-| `gogh` · `gogek`         | terminal color schemes · gogek on :8888   |
-| `c` · `xx` · `..`        | clear · exit · cd ..                      |
+| Command                  | What it does                                                                    |
+|--------------------------|---------------------------------------------------------------------------------|
+| `cheat` · `unixenv`      | this page · re-run setup (setup.light on hosts set up without Homebrew)         |
+| `ss` · `ssrs`            | screensaver                                                                     |
+| `power on` · `power off` | macOS deep sleep off · back on (sudo)                                           |
+| `rmdsstore`              | delete .DS_Store under /opt (macOS, sudo)                                       |
+| `motd-quiet`             | turn off Ubuntu's login messages, keep the reboot-required notice (Linux, sudo) |
+| `gogh` · `gogek`         | terminal color schemes · gogek on :8888                                         |
+| `c` · `xx` · `..`        | clear · exit · cd ..                                                            |

@@ -25,7 +25,7 @@ permissions: {}
 jobs:
 
   smoke-test:
-    name: smoke-test (${{ matrix.runner }})
+    name: smoke-test (${{ matrix.runner }}, ${{ matrix.mode }})
     runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ inputs.continue_on_error }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
@@ -35,6 +35,10 @@ jobs:
       fail-fast: false
       matrix:
         runner: ${{ fromJSON(inputs.runs_on) }}
+        # full: setup with Homebrew; light: setup.light with mise, no Homebrew or sudo
+        mode:
+          - full
+          - light
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,11 +48,19 @@ jobs:
       - name: 'Install Task'
         uses: ./.github/actions/setup-tools
       # Homebrew is preinstalled on Linux runners but not on PATH; setup requires it.
+      # The light run leaves it off PATH, which proves setup.light does not need it.
       - name: 'Put Homebrew on PATH'
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.mode == 'full'
         shell: bash
         run: |-
           echo '/home/linuxbrew/.linuxbrew/bin' >> "$GITHUB_PATH"
           echo '/home/linuxbrew/.linuxbrew/sbin' >> "$GITHUB_PATH"
       - name: 'Run setup and check the result'
+        if: matrix.mode == 'full'
         run: task --exit-code --yes test:smoke
+      # mise resolves "latest" through the GitHub API, which rate-limits unauthenticated runners.
+      - name: 'Run setup.light and check the result'
+        if: matrix.mode == 'light'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: task --exit-code --yes test:smoke:light

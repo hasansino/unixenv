@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# motd-quiet: turn off Ubuntu's login messages (news, tips, update notices) except the
+# "reboot required" notice. Linux with /etc/update-motd.d only; setup links it there.
+# Asks for sudo. Undo: sudo chmod +x /etc/update-motd.d/*
+#
+# Usage: motd-quiet
+
+set -e
+
+# overridable for tests
+MOTD_DIR="${MOTD_DIR:-/etc/update-motd.d}"
+
+if [ "$(uname -s)" != "Linux" ] || [ ! -d "$MOTD_DIR" ]; then
+    echo "motd-quiet: Linux with $MOTD_DIR only" >&2
+    exit 1
+fi
+
+sudo chmod -x "$MOTD_DIR"/*
+# keep the notice that the host needs a reboot, on images that have it
+if [ -e "$MOTD_DIR/98-reboot-required" ]; then
+    sudo chmod +x "$MOTD_DIR/98-reboot-required"
+    echo "Login messages are off; the reboot-required notice stays."
+else
+    echo "Login messages are off."
+fi
+echo "Undo: sudo chmod +x $MOTD_DIR/*"

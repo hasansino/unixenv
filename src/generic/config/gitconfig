@@ -60,10 +60,17 @@ autoSetupMerge = always
 # git branch lists the most recently committed branches first
 sort = -committerdate
 
+# delta only if installed; without it git would print an error instead of the diff
 [pager]
-    diff = diff-so-fancy | less --tabs=4 -RFX
-    show = diff-so-fancy | less --tabs=4 -RFX
-    log  = diff-so-fancy | less --tabs=4 -RFX
+    diff = "if command -v delta >/dev/null; then delta; else less --tabs=4 -RFX; fi"
+    show = "if command -v delta >/dev/null; then delta; else less --tabs=4 -RFX; fi"
+    log  = "if command -v delta >/dev/null; then delta; else less --tabs=4 -RFX; fi"
 
 [interactive]
-    diffFilter = diff-so-fancy --patch
+    diffFilter = "if command -v delta >/dev/null; then delta --color-only; else cat; fi"
+
+# delta takes its syntax colors from BAT_THEME (see the shell rc); side by side: `git diff | delta -s`
+[delta]
+    # n / N jump to the next / previous file in a long diff
+    navigate = true
+    line-numbers = true

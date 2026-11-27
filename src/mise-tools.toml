@@ -1,0 +1,49 @@
+# Tools for setup.light (mise), installed as ~/.config/mise/conf.d/unixenv.toml.
+
+[tools]
+# basics
+"conda:git" = "latest"
+"conda:gnupg" = "latest"
+"conda:nano" = "latest"
+"conda:trash-cli" = { version = "latest", os = ["linux"] }
+"conda:unzip" = "latest"
+"conda:watch" = "latest"
+"conda:wget" = "latest"
+
+# shell
+bat = "latest"
+broot = "latest"
+direnv = "latest"
+dust = "latest"
+eza = "latest"
+fd = "latest"
+fzf = "latest"
+navi = { version = "latest", os = ["linux"] }
+ripgrep = "latest"
+starship = "latest"
+zoxide = "latest"
+
+# tools
+delta = "latest"
+gh = "latest"
+glow = "latest"
+hyperfine = "latest"
+jq = "latest"
+"conda:mc" = "latest"
+"conda:tig" = "latest"
+tlrc = "latest"
+yq = "latest"
+
+# monitoring
+bottom = "latest"
+"conda:htop" = "latest"
+
+# containers
+helm = "latest"
+k9s = "latest"
+kubectl = "latest"
+
+# remote sessions
+"conda:mosh" = "latest"
+tmux = "latest"
+zellij = "latest"

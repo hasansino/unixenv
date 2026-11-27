@@ -43,6 +43,9 @@ jobs:
           install-args: --locked shellcheck shfmt
       - name: 'Check shell scripts and dotfiles'
         run: task --exit-code lint:shell
+      # fake ssh and mosh, so it needs no network; runs here because it is as quick as linting
+      - name: 'Test hop'
+        run: task --exit-code test:hop
 
   # JSON, YAML, and TOML formatting and lint rules; git and ssh configuration.
   # @see https://github.com/caarlos0/jsonfmt

@@ -29,17 +29,26 @@ else
 fi
 unset zcompdump
 
+# Each tool only if installed, so a host without it starts silently (see AGENTS.md).
 # --no-cmd keeps z and zi from src/generic/rc
-eval "$(zoxide init zsh --no-cmd)"
-eval "$(navi widget zsh)"
+if command -v zoxide > /dev/null 2>&1; then
+    eval "$(zoxide init zsh --no-cmd)"
+fi
+if command -v navi > /dev/null 2>&1; then
+    eval "$(navi widget zsh)"
+fi
 # Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc.
 # Only with a terminal: without one (scripts, the smoke test) the bindings print "can't change option: zle".
-if [ -t 0 ]; then
+if [ -t 0 ] && command -v fzf > /dev/null 2>&1; then
     source <(fzf --zsh)
 fi
-eval "$(starship init zsh)"
+if command -v starship > /dev/null 2>&1; then
+    eval "$(starship init zsh)"
+fi
 # loads and unloads a folder's .envrc on cd, once approved with `direnv allow`; after the prompt setup, as direnv asks
-eval "$(direnv hook zsh)"
+if command -v direnv > /dev/null 2>&1; then
+    eval "$(direnv hook zsh)"
+fi
 
 # Gray suggestions from history while typing; → accepts. Sourced before syntax highlighting, as both plugins require.
 if [ -f "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then

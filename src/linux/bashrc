@@ -20,14 +20,25 @@ if type brew &> /dev/null; then
     done
 fi
 
+# Each tool only if installed, so a host without it starts silently (see AGENTS.md).
 # --no-cmd keeps z and zi from src/generic/rc
-eval "$(zoxide init bash --no-cmd)"
-eval "$(navi widget bash)"
+if command -v zoxide &> /dev/null; then
+    eval "$(zoxide init bash --no-cmd)"
+fi
+if command -v navi &> /dev/null; then
+    eval "$(navi widget bash)"
+fi
 # Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc
-eval "$(fzf --bash)"
-eval "$(starship init bash)"
+if command -v fzf &> /dev/null; then
+    eval "$(fzf --bash)"
+fi
+if command -v starship &> /dev/null; then
+    eval "$(starship init bash)"
+fi
 # loads and unloads a folder's .envrc on cd, once approved with `direnv allow`; after the prompt setup, as direnv asks
-eval "$(direnv hook bash)"
+if command -v direnv &> /dev/null; then
+    eval "$(direnv hook bash)"
+fi
 
 # lets .bash_profile skip sourcing this file a second time; not exported, so child shells still load it
 # shellcheck disable=SC2034 # read by .bash_profile

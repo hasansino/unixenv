@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# Test for src/bin/hop, without a network or a real host.
+#
+# Fake ssh and mosh run the "remote" commands locally against a fake host: a temporary HOME whose
+# ~/.local/bin holds fake zellij, tmux, screen and mosh-server that only report how they were run.
+# The host's login shell is sh, and also csh where it exists, since hop must work with both.
+# Checks: mosh or ssh, the fallbacks, which session tool is picked, errors.
+#
+# Usage: task test:hop
+
+set -u
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# HOP=<path> tests another copy of the script
+HOP="${HOP:-$REPO_DIR/src/bin/hop}"
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+export T
+PASS=0
+FAIL=0
+
+# The fake host's PATH holds only sh, so tools of the machine running the test cannot leak in.
+# hop also adds real install folders to the host's PATH; the fakes point those somewhere empty.
+mkdir -p "$T/sysbin" "$T/stubs" "$T/nomosh"
+ln -s "$(command -v sh)" "$T/sysbin/sh"
+cat > "$T/hide-installs" << 'EOF'
+hide_installs() {
+    local cmd="$1"
+    cmd="${cmd//\/opt\/homebrew\/bin/\/nonexistent}"
+    cmd="${cmd//\/usr\/local\/bin/\/nonexistent}"
+    cmd="${cmd//\/home\/linuxbrew\/.linuxbrew\/bin/\/nonexistent}"
+    printf '%s' "$cmd"
+}
+EOF
+# fake ssh: runs the remote command with the host's login shell ($REMOTE_SHELL)
+cat > "$T/stubs/ssh" << 'EOF'
+#!/bin/bash
+echo "ssh $*" >> "$T/calls"
+if [ -n "${PROBE_FAIL:-}" ] && [ "$1" = "-o" ]; then
+    exit 255
+fi
+source "$T/hide-installs"
+HOME="$T/host-home" PATH="$T/sysbin" SHELL=/bin/echo "$REMOTE_SHELL" -c "$(hide_installs "${!#}")"
+if [ "$1" = "-t" ]; then
+    exit "${SSH_EXIT:-0}"
+fi
+EOF
+# fake mosh: records the --server string, then fails or runs the session command after --
+cat > "$T/stubs/mosh" << 'EOF'
+#!/bin/bash
+echo "mosh $1" >> "$T/calls"
+if [ "${MOSH_EXIT:-0}" -ne 0 ]; then
+    exit "$MOSH_EXIT"
+fi
+source "$T/hide-installs"
+HOME="$T/host-home" PATH="$T/sysbin" SHELL=/bin/echo sh -c "$(hide_installs "${!#}")"
+EOF
+cp "$T/stubs/ssh" "$T/nomosh/ssh"
+chmod +x "$T/stubs/ssh" "$T/stubs/mosh" "$T/nomosh/ssh"
+
+# host <tool...>: a fresh fake host with these tools; zellij-old is a zellij without key presets
+host() {
+    local tool name presets
+    rm -rf "$T/host-home"
+    mkdir -p "$T/host-home/.local/bin"
+    for tool in "$@"; do
+        name="${tool%-old}"
+        if [ "$name" = zellij ]; then
+            presets=""
+            if [ "$tool" = zellij ]; then
+                presets='echo "  --keybinds-unlock <KEYBINDS_UNLOCK>"'
+            fi
+            # shellcheck disable=SC2016 # the generated script expands these
+            printf '#!/bin/sh\nif [ "$1 $2" = "options --help" ]; then %s; exit 0; fi\necho "RAN zellij $*"\n' \
+                "$presets" > "$T/host-home/.local/bin/zellij"
+        else
+            # shellcheck disable=SC2016 # the generated script expands these
+            printf '#!/bin/sh\necho "RAN %s $*"\n' "$name" > "$T/host-home/.local/bin/$name"
+        fi
+        chmod +x "$T/host-home/.local/bin/$name"
+    done
+}
+
+# check <name> <stub dir> <regex expected in hop's output> <regex expected in the calls, or -> <hop args...>
+check() {
+    local name="$1" stubs="$2" want="$3" calls_want="$4" out code line
+    shift 4
+    : > "$T/calls"
+    out=$(PATH="$T/$stubs:/usr/bin:/bin" bash "$HOP" "$@" 2>&1)
+    code=$?
+    if echo "$out" | grep -qE "$want" && { [ "$calls_want" = "-" ] || grep -qE "$calls_want" "$T/calls"; }; then
+        echo "  PASS  $name"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL  $name (exit $code)"
+        while IFS= read -r line; do
+            echo "        output: $line"
+        done <<< "$out"
+        sed 's/^/        call: /' "$T/calls"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+ZELLIJ="RAN zellij attach -c main options --keybinds-preset unlock-first --keybinds-unlock Ctrl b"
+for REMOTE_SHELL in /bin/sh /bin/csh; do
+    if [ ! -x "$REMOTE_SHELL" ]; then
+        echo "== host login shell: $REMOTE_SHELL (not installed here, skipped)"
+        continue
+    fi
+    export REMOTE_SHELL
+    echo "== host login shell: $REMOTE_SHELL"
+    host zellij tmux mosh-server
+    check "mosh + zellij with Ctrl-B keys" stubs "$ZELLIJ" "mosh --server=.*LC_ALL=C.UTF-8 mosh-server" h
+    MOSH_EXIT=255 check "mosh fails: ssh into the same zellij session" stubs "$ZELLIJ" "^ssh -t h " h
+    check "--ssh skips mosh" stubs "$ZELLIJ" "^ssh -t h " --ssh h
+    check "no mosh here: ssh + zellij" nomosh "$ZELLIJ" "^ssh -t h " h
+    host zellij tmux
+    check "no mosh-server on the host: ssh + zellij" stubs "$ZELLIJ" "^ssh -t h " h
+    host zellij-old tmux
+    check "zellij without key presets: tmux" stubs "RAN tmux attach -t main" "^ssh -t h " h
+    host tmux
+    check "tmux only: tmux" stubs "RAN tmux attach -t main" "^ssh -t h " h
+    host screen
+    check "screen only: screen" stubs "RAN screen -D -R -S main" "^ssh -t h " h
+    host
+    check "nothing installed: warning and a plain shell" stubs "no tmux or screen on this host" "^ssh -t h " h
+done
+
+echo "== errors"
+export REMOTE_SHELL=/bin/sh
+PROBE_FAIL=1 check "unreachable host" stubs "cannot reach h over ssh" "^ssh -o BatchMode=no h" h
+check "usage without a host" stubs "Usage: hop" -
+
+echo "Passed $PASS, failed $FAIL."
+[ "$FAIL" -eq 0 ]

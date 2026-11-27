@@ -39,12 +39,12 @@ case "$1" in -*) usage ;; esac
 host="$1"
 
 # Remote commands run in a non-interactive shell, which on Ubuntu stops reading .bashrc before
-# unixenv's block puts brew on PATH, so add the usual install locations here.
+# unixenv's block puts brew on PATH, so add the usual install locations here (brew, mise shims).
 # Every remote snippet runs under sh -c, so the login shell (bash, zsh, old csh) does not matter.
 # Snippets are single lines (csh rejects line breaks inside quotes) without single quotes,
 # because they are wrapped in them.
 # shellcheck disable=SC2016 # expands on the host, not here
-remote_path='PATH="$HOME/.local/bin:/home/linuxbrew/.linuxbrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH'
+remote_path='PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:/home/linuxbrew/.linuxbrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH'
 tmux_chain='if command -v tmux >/dev/null 2>&1; then tmux attach -t main 2>/dev/null || exec tmux new -s main; exit; fi;'
 tmux_chain+=' if command -v screen >/dev/null 2>&1; then exec screen -D -R -S main; fi;'
 tmux_chain+=' echo "hop: no tmux or screen on this host; plain shell, nothing survives a drop" >&2;'
@@ -79,21 +79,14 @@ connect_ssh() {
     return "$code"
 }
 
-if [ "$force_ssh" = false ]; then
-    if ! command -v mosh > /dev/null 2>&1; then
-        echo "hop: mosh is not installed here; using ssh" >&2
-    elif [ "$has_mosh_server" = false ]; then
-        echo "hop: no mosh-server on $host; using ssh" >&2
-    else
-        echo "hop: mosh to $host" >&2
-        # mosh-server refuses to start without a UTF-8 locale; C.UTF-8 exists on every current Linux.
-        # As a prefix, LC_ALL reaches mosh-server's environment (mosh appends its own arguments).
-        if mosh --server="$remote_path; LC_ALL=C.UTF-8 mosh-server" "$host" -- sh -c "$session"; then
-            exit 0
-        fi
-        echo "hop: mosh could not connect (see above); falling back to ssh" >&2
+# Quiet unless something fails: no mosh here or on the host is normal and just means ssh.
+if [ "$force_ssh" = false ] && [ "$has_mosh_server" = true ] && command -v mosh > /dev/null 2>&1; then
+    # mosh-server refuses to start without a UTF-8 locale; C.UTF-8 exists on every current Linux.
+    # As a prefix, LC_ALL reaches mosh-server's environment (mosh appends its own arguments).
+    if mosh --server="$remote_path; LC_ALL=C.UTF-8 mosh-server" "$host" -- sh -c "$session"; then
+        exit 0
     fi
+    echo "hop: mosh could not connect (see above); falling back to ssh" >&2
 fi
 
-echo "hop: ssh to $host" >&2
 connect_ssh

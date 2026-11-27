@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Light setup: no Homebrew and no sudo. Tools come from mise, installed per user into ~/.local
+# (list: src/mise-tools.toml); configs, scripts and shell files are the same as in setup.
+# Shared steps live in src/setup/lib.sh.
+#
+# Prerequisites: git & curl
+
+set -e
+
+# --- BOOTSTRAP (same in setup) ---
+# Piped from curl, bash reads this script from stdin and the repository may not exist yet:
+# clone it, then run its copy of this script, which loads the shared steps.
+if [ -z "${BASH_SOURCE[0]}" ]; then
+    case " $* " in
+        *" --no-update "*) ;;
+        *) [ -d "$HOME/unixenv" ] || git clone https://github.com/hasansino/unixenv.git "$HOME/unixenv" ;;
+    esac
+    if [ ! -d "$HOME/unixenv" ]; then
+        echo "Error: $HOME/unixenv not found, --no-update needs an existing clone." >&2
+        exit 1
+    fi
+    # stdin holds the rest of this script, so the clone's copy must not inherit it
+    exec "$HOME/unixenv/setup.light" "$@" < /dev/null
+fi
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/$(basename "${BASH_SOURCE[0]}")"
+# shellcheck source=src/setup/lib.sh
+source "$(dirname "$SCRIPT")/src/setup/lib.sh"
+# --- BOOTSTRAP END ---
+
+usage() {
+    cat << 'EOF'
+Usage: setup.light [--no-update]
+
+Sets up unixenv without Homebrew or sudo: tools are installed per user by mise.
+
+  --no-update  use ~/unixenv as it is, without cloning or pulling
+  -h, --help   show this help
+
+When piped from curl, pass options after `bash -s --`.
+EOF
+}
+
+# mise's default folders; the shell profiles put the shims folder on PATH
+MISE_SHIMS="$HOME/.local/share/mise/shims"
+
+tools() {
+    # mise's own installer checks the download against the checksums it carries, and keeps an
+    # existing installation. It installs to ~/.local/bin/mise, which comes first on PATH, so another
+    # mise on the host (a distro package, a CI runner's) does not decide which version runs.
+    if [ ! -x "$HOME/.local/bin/mise" ]; then
+        curl -fsSL https://mise.run -o mise-install.sh
+        MISE_QUIET=1 sh mise-install.sh
+    fi
+    export PATH="$HOME/.local/bin:$MISE_SHIMS:$PATH"
+
+    # conf.d sits next to any mise config of your own instead of replacing it
+    install_config "$CLONE_DIR/src/mise-tools.toml" "$HOME/.config/mise/conf.d/unixenv.toml"
+    # One failed tool should not stop the rest of setup; mise has printed which one.
+    if ! mise install; then
+        echo "Warning: some tools failed to install; run 'mise install' again later." >&2
+    fi
+
+    # Like brew bundle, also update what an earlier run installed: with "latest", mise install only
+    # adds missing tools. Upgrade and prune are limited to this list, so mise tools of your own stay
+    # as they are; prune removes the versions the upgrade replaced.
+    local list=() tool
+    while IFS= read -r tool; do
+        list+=("$tool")
+    done < <(awk -F= '/^\[tools\]/ { t = 1; next } /^\[/ { t = 0 } t && /=/ && !/^#/ { gsub(/[" ]/, "", $1); print $1 }' \
+        "$CLONE_DIR/src/mise-tools.toml")
+    if ! mise upgrade "${list[@]}"; then
+        echo "Warning: some tools failed to upgrade; run 'mise upgrade' again later." >&2
+    fi
+    mise prune --tools --yes "${list[@]}"
+    mise reshim
+    # The downloaded archives are not needed once the tools are unpacked.
+    mise cache clear
+}
+
+parse_args no-fonts "$@"
+check_prerequisites curl
+self_update "$SCRIPT" "$@"
+enter_tmp_dir
+
+tools
+configs
+scripts
+shell_files
+
+echo "Finished."
