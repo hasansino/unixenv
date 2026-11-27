@@ -78,7 +78,7 @@ tools() {
     mise cache clear
 }
 
-parse_args no-fonts "$@"
+parse_args "$@"
 check_prerequisites curl
 self_update "$SCRIPT" "$@"
 enter_tmp_dir

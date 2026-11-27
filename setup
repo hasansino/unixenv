@@ -33,9 +33,8 @@ source "$(dirname "$SCRIPT")/src/setup/lib.sh"
 
 usage() {
     cat << 'EOF'
-Usage: setup [--fonts] [--no-update]
+Usage: setup [--no-update]
 
-  --fonts      also install the Cascadia Code font
   --no-update  use ~/unixenv as it is, without cloning or pulling
   -h, --help   show this help
 
@@ -55,80 +54,6 @@ packages() {
     # Old versions and downloads otherwise pile up after every upgrade.
     brew cleanup --prune=all
     uv tool install -U --python 3.13 posting
-    screensavers
-}
-
-# Screensavers for alias `ssrs`, as release binaries: building them needs Rust and llvm, about 2.5 GB.
-screensavers() {
-    local name pinned
-    for name in pipes-rs weathr; do
-        if pinned=$(pin "$name"); then
-            install_release_binary "$name" "${pinned% *}" "${pinned#* }"
-        else
-            echo "Warning: $name has no build for $(uname -s)/$(uname -m); ssrs runs without it." >&2
-        fi
-    done
-}
-
-fonts() {
-    local FONT_NAME="Cascadia Code"
-    local ZIP_FILE="CascadiaCode.zip"
-
-    echo "Installing $FONT_NAME font..."
-
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if find "$HOME/.local/share/fonts" /usr/share/fonts -type f -name "*Cascadia*.ttf" 2> /dev/null | grep -q .; then
-            echo "✓ $FONT_NAME already installed"
-            return 0
-        fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        if find "$HOME/Library/Fonts" -type f -name "*Cascadia*.ttf" 2> /dev/null | grep -q .; then
-            echo "✓ $FONT_NAME already installed"
-            return 0
-        fi
-    fi
-
-    if ! command -v unzip &> /dev/null; then
-        echo "Error: unzip is required for font installation."
-        return 1
-    fi
-    local pinned
-    pinned=$(pin cascadia)
-
-    local FONT_TMP_DIR
-    FONT_TMP_DIR=$(mktemp -d)
-    pushd "$FONT_TMP_DIR" > /dev/null
-
-    curl -fsSL -o "$ZIP_FILE" "${pinned% *}"
-    if [ "$(sha256_of "$ZIP_FILE")" != "${pinned#* }" ]; then
-        echo "Error: checksum mismatch for ${pinned% *}; the font was not installed." >&2
-        popd > /dev/null
-        rm -rf "$FONT_TMP_DIR"
-        return 1
-    fi
-    unzip -q "$ZIP_FILE"
-
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        local FONT_DIR="$HOME/.local/share/fonts"
-        mkdir -p "$FONT_DIR"
-        find . -name "*.ttf" -exec cp {} "$FONT_DIR" \;
-        command -v fc-cache &> /dev/null && fc-cache -fv > /dev/null 2>&1
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        local FONT_DIR="$HOME/Library/Fonts"
-        mkdir -p "$FONT_DIR"
-        find . -name "*.ttf" -exec cp {} "$FONT_DIR" \;
-    else
-        echo "Warning: Font installation not supported for OS: $OSTYPE"
-        popd > /dev/null
-        rm -rf "$FONT_TMP_DIR"
-        return 1
-    fi
-
-    popd > /dev/null
-    rm -rf "$FONT_TMP_DIR"
-
-    echo "✓ $FONT_NAME font installed successfully"
-    return 0
 }
 
 macos_defaults() {
@@ -146,7 +71,7 @@ macos_defaults() {
     fi
 }
 
-parse_args fonts "$@"
+parse_args "$@"
 check_prerequisites brew
 self_update "$SCRIPT" "$@"
 enter_tmp_dir
@@ -156,9 +81,6 @@ configs
 scripts
 if [[ "$OSTYPE" == "darwin"* ]]; then
     macos_defaults
-fi
-if [ "$RUN_FONTS" = true ]; then
-    fonts
 fi
 shell_files
 

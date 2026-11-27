@@ -14,10 +14,9 @@
   project config inside `src/`); `conda:mc` is Midnight Commander, while plain `mc` in
   mise's registry is MinIO's client; navi has no macOS build and trash-cli is Linux-only,
   hence their `os` limits.
-- Anything setup downloads outside a package manager is pinned in `src/pinned/pinned.toml` (release, platform,
-  checksum) and read through `pin`; `task check:pins` reports newer releases. Never fetch an
-  unpinned file or pipe a download into a shell in setup. One exception so far: setup.light runs
-  the official mise installer from mise.run, which verifies the mise it installs.
+- Setup installs software only through Homebrew or mise, which verify what they download; it
+  never fetches files itself or pipes a download into a shell. The one exception: setup.light
+  runs the official mise installer from mise.run, which verifies the mise it installs.
 - `src/generic/rc` and `src/generic/aliases` are read by both zsh and bash: no array
   indexing, quote every variable, and define functions as `function name {` (an
   existing alias with the same name breaks `name() {`).

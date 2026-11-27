@@ -59,6 +59,9 @@ brew "astroterm"
 brew "cbonsai"
 brew "pipes-sh"
 
+# fonts
+cask "font-cascadia-code" if OS.mac?
+
 # genai
 brew "charmbracelet/tap/crush"
 cask "antigravity-cli"

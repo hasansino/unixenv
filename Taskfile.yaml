@@ -137,7 +137,7 @@ tasks:
     desc: "Run setup against a throwaway HOME and check the result (installs brew packages)"
     summary: |-
       Usage: task test:smoke
-      Runs `setup --no-update --fonts` twice with HOME in a temporary directory, then checks managed blocks,
+      Runs `setup --no-update` twice with HOME in a temporary directory, then checks managed blocks,
       installed configuration and shell startup. Brew packages and casks are installed globally, as setup does.
       CI runs it with `task --yes test:smoke`.
     prompt: "test:smoke runs setup, which installs brew packages and casks globally. Continue?"
@@ -153,15 +153,6 @@ tasks:
       CI runs it with `task --yes test:smoke:light`.
     cmds:
       - "bash tests/smoke --light"
-
-  check:pins:
-    desc: "Report newer releases for the downloads pinned in src/pinned/pinned.toml (read only)"
-    summary: |-
-      Usage: task check:pins
-      Asks GitHub for each pinned project's latest release. For a newer one it downloads the files into a
-      temporary folder and prints the src/pinned/pinned.toml sections with the new checksums, ready to paste.
-    cmds:
-      - "bash src/pinned/check-pins"
 
   test:hop:
     desc: "Check hop's choices with fake ssh and mosh (read only, no network)"
@@ -356,7 +347,7 @@ tasks:
       Uses the system git and ssh, which parse each file and fail on malformed lines or unknown options.
     cmds:
       - |
-        for file in src/generic/config/gitconfig src/generic/config/gitconfig.gpg; do
+        for file in src/generic/config/gitconfig src/generic/config/gitconfig.local; do
           printf 'Checking %s\n' "$file"
           git config --file "$file" --list > /dev/null
         done

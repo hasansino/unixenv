@@ -3,26 +3,13 @@
 
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
-RUN_FONTS=false
 RUN_UPDATE=true
 
-# parse_args <fonts|no-fonts> "$@": --fonts is accepted only by entries that install fonts
-# shellcheck disable=SC2034 # RUN_FONTS is read by setup
 parse_args() {
-    local fonts_allowed="$1"
-    shift
     local arg
     for arg in "$@"; do
         case "$arg" in
             --no-update) RUN_UPDATE=false ;;
-            --fonts)
-                if [ "$fonts_allowed" != fonts ]; then
-                    echo "Error: unknown option: $arg" >&2
-                    usage >&2
-                    exit 2
-                fi
-                RUN_FONTS=true
-                ;;
             -h | --help)
                 usage
                 exit 0
@@ -200,85 +187,6 @@ stable_prefix() {
     esac
 }
 
-# --- pinned downloads (src/pinned/pinned.toml) ---
-
-sha256_of() {
-    if command -v sha256sum > /dev/null 2>&1; then
-        sha256sum "$1" | awk '{ print $1 }'
-    else
-        shasum -a 256 "$1" | awk '{ print $1 }'
-    fi
-}
-
-# Download a release binary (or a .tar.gz holding one), check it against the recorded checksum and
-# install it into ~/.local/bin. A failure only skips that binary.
-install_release_binary() {
-    local name="$1" url="$2" sha256="$3"
-    local dir binary
-    dir=$(mktemp -d)
-    if ! curl -fsSL -o "$dir/download" "$url"; then
-        echo "Warning: could not download $url; skipping $name." >&2
-        rm -rf "$dir"
-        return 0
-    fi
-    if [ "$(sha256_of "$dir/download")" != "$sha256" ]; then
-        echo "Warning: checksum mismatch for $url; skipping $name." >&2
-        rm -rf "$dir"
-        return 0
-    fi
-    binary="$dir/download"
-    if [[ "$url" == *.tar.gz ]]; then
-        mkdir "$dir/unpacked"
-        tar -xzf "$dir/download" -C "$dir/unpacked"
-        # the archives hold the binary alone, under a path that differs per release
-        binary=$(find "$dir/unpacked" -type f | head -n 1)
-    fi
-    mkdir -p "$HOME/.local/bin"
-    install -m 755 "$binary" "$HOME/.local/bin/$name"
-    rm -rf "$dir"
-}
-
-# pin <name>: "<url> <sha256>" of a pinned download for this platform, from src/pinned/pinned.toml;
-# fails when that release has no build for this platform.
-# Reads the file's fixed layout (formatted by tombi) with awk, so setup needs no TOML parser:
-# [<name>] with repo and tag, then [<name>.files] with "<platform>" = { file = …, sha256 = … }.
-pin() {
-    local platform
-    platform="$(uname -s)/$(uname -m)"
-    if [ "$platform" = Linux/arm64 ]; then
-        platform=Linux/aarch64
-    fi
-    awk -v name="$1" -v platform="$platform" '
-        function string(line, key,    s) {
-            if (!match(line, key " = \"[^\"]*\"")) return ""
-            s = substr(line, RSTART, RLENGTH)
-            sub(/^[^"]*"/, "", s)
-            sub(/"$/, "", s)
-            return s
-        }
-        /^\[/ { section = $0; gsub(/[][ ]/, "", section); next }
-        section == name { if (/^repo = /) repo = string($0, "repo"); if (/^tag = /) tag = string($0, "tag") }
-        section == name ".files" && /=/ && file == "" {
-            key = $0
-            sub(/ =.*/, "", key)
-            gsub(/"/, "", key)
-            if (key == platform || key == "any") {
-                file = string($0, "file")
-                sha256 = string($0, "sha256")
-            }
-        }
-        END {
-            if (repo == "" || tag == "" || file == "") exit 1
-            version = tag
-            sub(/^v/, "", version)
-            # plain string functions: awks differ on braces in regular expressions
-            i = index(file, "{version}")
-            if (i) file = substr(file, 1, i - 1) version substr(file, i + 9)
-            print "https://github.com/" repo "/releases/download/" tag "/" file, sha256
-        }
-    ' "$CLONE_DIR/src/pinned/pinned.toml"
-}
-
 # --- configuration ---
 
 configs() {
@@ -287,6 +195,10 @@ configs() {
     touch "$HOME/.ssh/config_hosts"
     # git
     install_config "$CLONE_DIR/src/generic/config/gitconfig" "$HOME/.gitconfig"
+    # your own settings, included by ~/.gitconfig: copied once from a template, never replaced
+    if [ ! -e "$HOME/.gitconfig.local" ]; then
+        cp "$CLONE_DIR/src/generic/config/gitconfig.local" "$HOME/.gitconfig.local"
+    fi
     install_config "$CLONE_DIR/src/generic/config/gitignore" "$HOME/.gitignore"
     # btm
     install_config "$CLONE_DIR/src/generic/config/btm.toml" "$HOME/.config/btm.toml"
@@ -371,9 +283,10 @@ config_mc() {
         echo "config_mc warning: mc is not installed; skipping its file actions." >&2
         return 0
     fi
-    # mc reports where it keeps its default file actions; the first "Config directory" is the system one
+    # mc reports where it keeps its default file actions; the first "Config directory" is the system one.
+    # mc refuses to start, even for -F, when TERM is unset (CI runners, cron).
     local system_dir
-    system_dir=$(mc -F 2> /dev/null | awk -F': *' '/Config directory/ { print $2; exit }')
+    system_dir=$(TERM="${TERM:-dumb}" mc -F 2> /dev/null | awk -F': *' '/Config directory/ { print $2; exit }')
     system_dir="${system_dir%/}"
     if [ ! -f "$system_dir/mc.ext.ini" ]; then
         echo "config_mc warning: mc's default file actions not found; skipping them." >&2

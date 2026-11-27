@@ -2,11 +2,11 @@
 
 # Smoke test for setup, or with --light for setup.light.
 #
-# Runs `setup --no-update --fonts` (or `setup.light --no-update`) twice with HOME in a temporary
+# Runs `setup --no-update` (or `setup.light --no-update`) twice with HOME in a temporary
 # directory, then checks that:
 # - each managed shell file holds exactly one UNIXENV block, and lines around it keep their position
 # - the second run leaves the managed shell files unchanged
-# - configuration files and script links are installed; for setup also the font and screensavers,
+# - configuration files and script links are installed; for setup on macOS also the font cask,
 #   for setup.light mise and its tools
 # - a configuration file changed locally is backed up to .<timestamp>.bak before it is replaced
 # - a login interactive shell starts from a bare system PATH without writing to stderr, and finds fzf
@@ -24,11 +24,13 @@ fi
 if [ "$LIGHT" = true ]; then
     SETUP_COMMAND=(setup.light --no-update)
 else
-    SETUP_COMMAND=(setup --no-update --fonts)
+    SETUP_COMMAND=(setup --no-update)
 fi
 # The Taskfile points mise at this repository's linters (.tools, etc/mise.toml); setup.light must
-# get a default mise, as on a fresh host.
+# get a default mise, as on a fresh host. XDG folders would also lead outside the temporary HOME
+# (GitHub's Ubuntu runners set XDG_CONFIG_HOME, and mise then ignores ~/.config/mise on Linux).
 unset MISE_DEFAULT_CONFIG_FILENAME MISE_DATA_DIR MISE_CACHE_DIR MISE_STATE_DIR MISE_CONFIG_DIR
+unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SMOKE_HOME="$(mktemp -d)"
@@ -43,11 +45,9 @@ LOCAL_EDIT="# smoke: local edit that setup must back up"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     MANAGED_FILES=(.zprofile .zshrc .zsh_aliases)
     LOGIN_SHELL=zsh
-    FONT_DIR="Library/Fonts"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     MANAGED_FILES=(.bash_profile .bashrc .bash_aliases)
     LOGIN_SHELL=bash
-    FONT_DIR=".local/share/fonts"
 else
     echo "Unsupported OS: $OSTYPE" >&2
     exit 1
@@ -58,6 +58,7 @@ INSTALLED_FILES=(
     .ssh/config_hosts
     .nanorc
     .gitconfig
+    .gitconfig.local
     .gitignore
     .config/btm.toml
     .config/htop/htoprc
@@ -101,8 +102,12 @@ for file in "${MANAGED_FILES[@]}"; do
     echo "$AFTER_LINE" >> "$SMOKE_HOME/$file"
     cp "$SMOKE_HOME/$file" "$WORK_DIR/$file"
 done
+cmp -s "$REPO_DIR/src/generic/config/gitconfig.local" "$SMOKE_HOME/.gitconfig.local" \
+    || fail "the first run did not copy the template to ~/.gitconfig.local"
 # the repository file may lack a final newline, so start a new line
 printf '\n%s\n' "$LOCAL_EDIT" >> "$SMOKE_HOME/.gitconfig"
+# ~/.gitconfig.local is yours after the first run: setup must keep this line
+echo "$LOCAL_EDIT" >> "$SMOKE_HOME/.gitconfig.local"
 
 run_setup
 
@@ -129,12 +134,9 @@ if [ "$LIGHT" = true ]; then
     for tool in fzf rg zellij tmux git nano mc mosh-server delta; do
         [ -e "$SMOKE_HOME/.local/share/mise/shims/$tool" ] || fail "missing mise shim for $tool"
     done
-else
-    # screensaver release binaries (setup installs them for ssrs; CI runners have builds of both)
-    for binary in pipes-rs weathr; do
-        [ -x "$SMOKE_HOME/.local/bin/$binary" ] || fail "missing screensaver ~/.local/bin/$binary"
-    done
-    compgen -G "$SMOKE_HOME/$FONT_DIR/*Cascadia*.ttf" > /dev/null || fail "Cascadia Code font missing in ~/$FONT_DIR"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # casks install for the whole machine, not into the temporary HOME
+    brew list --cask font-cascadia-code > /dev/null 2>&1 || fail "the font-cascadia-code cask is not installed"
 fi
 for script in "${LINKED_SCRIPTS[@]}"; do
     link="$SMOKE_HOME/.local/bin/$script"
@@ -149,6 +151,9 @@ if [ "${#gitconfig_backups[@]}" -ne 1 ] || [ "$(tail -n 1 "${gitconfig_backups[0
     fail "expected one ~/.gitconfig.<timestamp>.bak holding the local edit"
 fi
 cmp -s "$REPO_DIR/src/generic/config/gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
+if [ "$(tail -n 1 "$SMOKE_HOME/.gitconfig.local")" != "$LOCAL_EDIT" ] || compgen -G "$SMOKE_HOME/.gitconfig.local.*.bak" > /dev/null; then
+    fail "the second run changed or backed up ~/.gitconfig.local"
+fi
 
 # A bare PATH proves the shell files put the tools on PATH themselves (brew, or mise's shims).
 echo "==> starting a login interactive $LOGIN_SHELL"

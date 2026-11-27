@@ -98,19 +98,19 @@
 
 ## Your settings (setup never overwrites)
 
-| Where                        | What goes there                             |
-|------------------------------|---------------------------------------------|
-| `~/.gitconfig.local`         | personal git settings                       |
-| `~/.ssh/config_hosts`        | ssh hosts; override the defaults            |
-| `~/.zshrc`, `~/.zsh_aliases` | your lines outside the UNIXENV block        |
-| `*.<timestamp>.bak`          | the last 5 versions of each replaced config |
+| Where                        | What goes there                                            |
+|------------------------------|------------------------------------------------------------|
+| `~/.gitconfig.local`         | personal git settings; GPG and SSH signing examples inside |
+| `~/.ssh/config_hosts`        | ssh hosts; override the defaults                           |
+| `~/.zshrc`, `~/.zsh_aliases` | your lines outside the UNIXENV block                       |
+| `*.<timestamp>.bak`          | the last 5 versions of each replaced config                |
 
 ## Misc
 
 | Command                  | What it does                                                                    |
 |--------------------------|---------------------------------------------------------------------------------|
 | `cheat` · `unixenv`      | this page · re-run setup (setup.light on hosts set up without Homebrew)         |
-| `ss` · `ssrs`            | screensaver                                                                     |
+| `ss`                     | random terminal screensaver                                                     |
 | `power on` · `power off` | macOS deep sleep off · back on (sudo)                                           |
 | `rmdsstore`              | delete .DS_Store under /opt (macOS, sudo)                                       |
 | `motd-quiet`             | turn off Ubuntu's login messages, keep the reboot-required notice (Linux, sudo) |

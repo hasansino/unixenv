@@ -52,9 +52,6 @@ prune = true
 autosquash = true
 autostash = true
 
-[include]
-path = ~/.gitconfig.local
-
 [branch]
 autoSetupMerge = always
 # git branch lists the most recently committed branches first
@@ -74,3 +71,6 @@ sort = -committerdate
     # n / N jump to the next / previous file in a long diff
     navigate = true
     line-numbers = true
+
+[include]
+path = ~/.gitconfig.local

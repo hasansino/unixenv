@@ -58,11 +58,6 @@ function ss {
     shift $((RANDOM % $#))
     eval "$1"
 }
-function ssrs {
-    set -- "pipes-rs" "weathr"
-    shift $((RANDOM % $#))
-    eval "$1"
-}
 
 # git
 alias gs='git status'
