@@ -10,7 +10,7 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # Shell scripts and dotfiles follow shfmt -i 4 (see SHFMT_FLAGS in Taskfile.yaml).
-[{*.sh,setup,tests/smoke,src/ubuntu,src/bin/*,src/macos/power,src/generic/aliases,src/generic/rc,src/linux/.bash*,src/macos/.z*}]
+[{*.sh,setup,tests/smoke,src/ubuntu,src/bin/*,src/macos/power,src/generic/aliases,src/generic/rc,src/linux/bash*,src/macos/z*}]
 indent_style = space
 indent_size = 4
 

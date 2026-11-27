@@ -1,0 +1,4 @@
+# ripgrep defaults, read through RIPGREP_CONFIG_PATH; one argument per line.
+# Search dotfiles too; .gitignore rules still apply, and .git itself stays out.
+--hidden
+--glob=!.git/

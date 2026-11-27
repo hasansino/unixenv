@@ -1,0 +1,15 @@
+# Midnight Commander settings, installed by setup to ~/.config/mc/ini.
+# Keys not listed here keep mc's defaults.
+
+[Midnight-Commander]
+# F4 opens $EDITOR (nano) instead of mcedit
+use_internal_edit=false
+confirm_exit=false
+# keep this file as written: with auto save, mc rewrites it on every exit and setup then replaces it again.
+# F9 → Options → Save setup still saves on request.
+auto_save_setup=false
+
+[Panels]
+# ← goes to the parent directory, → enters the directory under the cursor
+navigate_with_arrows=true
+show_dot_files=true

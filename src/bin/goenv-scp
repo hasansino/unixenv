@@ -71,7 +71,10 @@ find_go_download() {
         echo "Auto-detected architecture: $target_arch" >&2
     fi
 
-    json_data=$(curl -s "$download_url/?mode=json&include=all")
+    if ! json_data=$(curl -fsSL "$download_url/?mode=json&include=all"); then
+        echo "Error: could not fetch the Go release list" >&2
+        return 1
+    fi
 
     local file_info
     file_info=$(echo "$json_data" | jq -r --arg v "go$version" --arg os "$os_type" --arg arch "$target_arch" \
@@ -86,7 +89,16 @@ find_go_download() {
     filename=$(echo "$file_info" | jq -r '.filename')
     sha256=$(echo "$file_info" | jq -r '.sha256')
 
-    echo "$download_url/$filename#sha256=$sha256"
+    # two words: URL and expected SHA-256
+    echo "$download_url/$filename $sha256"
+}
+
+sha256_of() {
+    if command -v sha256sum > /dev/null 2>&1; then
+        sha256sum "$1" | awk '{ print $1 }'
+    else
+        shasum -a 256 "$1" | awk '{ print $1 }'
+    fi
 }
 
 find_or_download_go_sdk() {
@@ -103,21 +115,32 @@ find_or_download_go_sdk() {
     fi
 
     echo "Go SDK version $GO_VERSION not found, downloading..." >&2
-    local download_url
-    if ! download_url=$(find_go_download "$GO_VERSION") || [ -z "$download_url" ]; then
+    local download download_url expected_sha256
+    if ! download=$(find_go_download "$GO_VERSION") || [ -z "$download" ]; then
         echo "Failed to get download URL for Go $GO_VERSION" >&2
         return 1
     fi
+    download_url="${download% *}"
+    expected_sha256="${download##* }"
 
     local temp_file
     temp_file=$(mktemp)
     echo "Downloading from: $download_url" >&2
 
-    if ! curl -L -o "$temp_file" "$download_url"; then
+    if ! curl -fL -o "$temp_file" "$download_url"; then
         echo "Download failed" >&2
         rm -f "$temp_file"
         return 1
     fi
+
+    local actual_sha256
+    actual_sha256=$(sha256_of "$temp_file")
+    if [ "$actual_sha256" != "$expected_sha256" ]; then
+        echo "Checksum mismatch: expected $expected_sha256, got $actual_sha256" >&2
+        rm -f "$temp_file"
+        return 1
+    fi
+    echo "Checksum verified: $actual_sha256" >&2
 
     echo "Extracting Go SDK..." >&2
 

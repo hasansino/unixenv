@@ -1,6 +1,6 @@
 set nohelp
 set zero
-set backupdir "/tmp/.cache/nano"
+set backup
 set historylog
 set autoindent
 set softwrap

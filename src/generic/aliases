@@ -1,5 +1,6 @@
 # generic aliases
 # read by zsh (darwin) and bash (linux): no array indexing, quote every variable, shared features only
+# define functions as `function name {`: with `name() {`, an alias of the same name defined earlier breaks the file
 
 alias path='echo "$PATH" | tr ":" "\n"'
 
@@ -10,36 +11,34 @@ alias xx="exit"
 alias c='clear'
 
 # utilities
-alias bat="bat -p --theme OneHalfDark"
+alias bat="bat -p"
 alias cnt="ls | wc -l"
 alias btm="btm -C ~/.config/btm.toml --autohide_time"
 alias hf="hyperfine --warmup 3 --shell bash"
+# dotfiles too; .gitignore rules still apply, and .git itself stays out
+alias fd="fd --hidden --exclude .git"
+# re-run setup from anywhere
+alias unixenv='"$HOME/unixenv/setup"'
 
-make() {
-    if [ -f "_Makefile" ]; then
-        echo "Trying _Makefile"
-        if ! command make -f _Makefile "$@" 2> >(tee /tmp/make_err.$$ >&2); then
-            if grep -q "No rule to make target" /tmp/make_err.$$; then
-                echo "Falling back to default Makefile"
-                command make "$@"
-            else
-                return 1
-            fi
-        fi
-        rm -f /tmp/make_err.$$
+# mc through its wrapper, so quitting leaves the shell in mc's last directory
+function mc {
+    local wrapper
+    wrapper="${HOMEBREW_PREFIX:-$(brew --prefix)}/opt/midnight-commander/libexec/mc/mc-wrapper.sh"
+    if [ -f "$wrapper" ]; then
+        . "$wrapper" "$@"
     else
-        command make "$@"
+        command mc "$@"
     fi
 }
 
 # screensavers: each run starts a random one
 # picked with set/shift: no arrays here, and no subshell, where zsh repeats $RANDOM
-ss() {
+function ss {
     set -- "pipes.sh" "cbonsai -l -i" "astroterm -c -C -u -q -s 1000"
     shift $((RANDOM % $#))
     eval "$1"
 }
-ssrs() {
+function ssrs {
     set -- "pipes-rs" "weathr"
     shift $((RANDOM % $#))
     eval "$1"
@@ -51,54 +50,47 @@ alias gb='git branch'
 alias ga='git add .'
 alias gl='git log --oneline --graph --decorate'
 alias gco='git checkout'
-grb() {
+function grb {
     git rebase --autostash -i HEAD~"$1"
 }
 
 # docker
-dc() {
-    local args=("$@")
-    local fmt tpl
+function dc {
     if [ "$1" = "ps" ]; then
-        fmt="--format"
-        tpl="table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Name}}"
-    fi
-    if [ -f "_docker-compose.yml" ]; then
-        echo "Using _docker-compose.yml"
-        docker compose -f _docker-compose.yml "${args[@]}" ${fmt:+"$fmt"} ${tpl:+"$tpl"}
+        docker compose "$@" --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Name}}"
     else
-        docker compose "${args[@]}" ${fmt:+"$fmt"} ${tpl:+"$tpl"}
+        docker compose "$@"
     fi
 }
-dcr() {
+function dcr {
     if [[ $# -eq 0 ]]; then
         docker compose stop && docker compose up -d && docker compose logs -f
     else
         docker compose stop "$@" && docker compose up -d "$@" && docker compose logs -f "$@"
     fi
 }
-dcrb() {
+function dcrb {
     if [[ $# -eq 0 ]]; then
         docker compose stop && docker compose rm -vf && docker compose up -d && docker compose logs -f
     else
         docker compose stop "$@" && docker compose rm -vf "$@" && docker compose up -d "$@" && docker compose logs -f "$@"
     fi
 }
-dnet() {
+function dnet {
     local container_name
     container_name="$(docker ps -a --format '{{.Names}}' | grep "$1")"
     docker run --rm -it --net "container:$container_name" nicolaka/netshoot iftop -bP
 }
 
 # k8
-k() {
+function k {
     if [ -f "./.kubeconfig" ]; then
         KUBECONFIG="./.kubeconfig" kubectl "$@"
     else
         kubectl "$@"
     fi
 }
-k9s() {
+function k9s {
     if [ -f "./.kubeconfig" ]; then
         KUBECONFIG="./.kubeconfig" command k9s "$@"
     else
@@ -107,10 +99,10 @@ k9s() {
 }
 
 # golang
-goenv() {
+function goenv {
     source goenv-scp "$1" "$2"
 }
-goinstall() {
+function goinstall {
     GOPROXY=direct go install "$@"
 }
 alias goclean='go clean -cache -modcache -i -r'

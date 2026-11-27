@@ -23,5 +23,12 @@ fi
 # --no-cmd keeps z and zi from src/generic/rc
 eval "$(zoxide init bash --no-cmd)"
 eval "$(navi widget bash)"
-eval "$(gh completion -s bash)"
+# Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc
+eval "$(fzf --bash)"
 eval "$(starship init bash)"
+# loads and unloads a folder's .envrc on cd, once approved with `direnv allow`; after the prompt setup, as direnv asks
+eval "$(direnv hook bash)"
+
+# lets .bash_profile skip sourcing this file a second time; not exported, so child shells still load it
+# shellcheck disable=SC2034 # read by .bash_profile
+UNIXENV_BASHRC_LOADED=1

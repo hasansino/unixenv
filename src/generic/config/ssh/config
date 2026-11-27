@@ -1,0 +1,16 @@
+# Host entries in config_hosts come first: ssh keeps the first value it finds for each option,
+# so a host there can override the defaults below.
+Include config_hosts
+
+Host *
+    TCPKeepAlive yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ConnectTimeout 10
+    StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+    # reuse one connection per host, kept open 10 minutes after the last session ends
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%C
+    ControlPersist 10m

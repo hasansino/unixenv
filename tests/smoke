@@ -6,7 +6,7 @@
 # - each managed shell file holds exactly one UNIXENV block, and lines around it keep their position
 # - the second run leaves the managed shell files unchanged
 # - configuration files, script links and the font are installed
-# - a configuration file changed locally is backed up to .bak before it is replaced
+# - a configuration file changed locally is backed up to .<timestamp>.bak before it is replaced
 # - a login interactive shell starts from a bare system PATH without writing to stderr
 #
 # Brew packages and casks are installed globally, as setup does.
@@ -47,10 +47,16 @@ INSTALLED_FILES=(
     .config/btm.toml
     .config/htop/htoprc
     .config/eza/theme.yml
+    .config/ripgrep/config
+    .config/mc/ini
+    .config/mc/mc.ext.ini
     .docker/config.json
     .hushlogin
 )
-LINKED_SCRIPTS=(goenv-scp back-opt)
+LINKED_SCRIPTS=(goenv-scp back-opt cheat)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LINKED_SCRIPTS+=(power)
+fi
 
 FAILURES=0
 fail() {
@@ -104,11 +110,13 @@ for script in "${LINKED_SCRIPTS[@]}"; do
         fail "missing executable link ~/.local/bin/$script"
     fi
 done
+[ -d "$SMOKE_HOME/.local/state/nano/backups" ] || fail "missing nano backup directory ~/.local/state/nano/backups"
 compgen -G "$SMOKE_HOME/$FONT_DIR/*Cascadia*.ttf" > /dev/null || fail "Cascadia Code font missing in ~/$FONT_DIR"
-if [ "$(tail -n 1 "$SMOKE_HOME/.gitconfig.bak" 2> /dev/null)" != "$LOCAL_EDIT" ]; then
-    fail "the local edit was not backed up to ~/.gitconfig.bak"
+gitconfig_backups=("$SMOKE_HOME"/.gitconfig.*.bak)
+if [ "${#gitconfig_backups[@]}" -ne 1 ] || [ "$(tail -n 1 "${gitconfig_backups[0]}" 2> /dev/null)" != "$LOCAL_EDIT" ]; then
+    fail "expected one ~/.gitconfig.<timestamp>.bak holding the local edit"
 fi
-cmp -s "$REPO_DIR/src/generic/.config/.gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
+cmp -s "$REPO_DIR/src/generic/config/gitconfig" "$SMOKE_HOME/.gitconfig" || fail "the repository version did not replace ~/.gitconfig"
 
 # A bare PATH proves the shell files put brew on PATH themselves.
 echo "==> starting a login interactive $LOGIN_SHELL"

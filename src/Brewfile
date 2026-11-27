@@ -16,25 +16,35 @@ brew "fzf"
 brew "eza"
 brew "bat"
 brew "broot"
+brew "midnight-commander"
 brew "navi"
 brew "dust"
 brew "fd"
+brew "ripgrep"
+brew "direnv"
 brew "hyperfine"
+# macOS ships /usr/bin/trash
+brew "trash-cli" if OS.linux?
+
+# zsh plugins, sourced by zshrc; linux uses bash
+brew "zsh-autosuggestions" if OS.mac?
+brew "zsh-syntax-highlighting" if OS.mac?
 
 # monitoring
-brew "gotop"
 brew "bottom"
 
 # containers
-brew "lazydocker"
 brew "kubectl"
 brew "k9s"
 brew "helm"
 
 # tools
 brew "uv"
+brew "git"
 brew "gh"
+brew "gnupg"
 brew "jq"
+brew "yq"
 brew "starship"
 brew "glow"
 brew "diff-so-fancy"
@@ -55,3 +65,6 @@ brew "astroterm"
 cask "claude-code"
 cask "codex"
 cask "antigravity-cli"
+# crush is not in homebrew-core; Charm publishes it in its own tap (setup trusts this one formula)
+tap "charmbracelet/tap"
+brew "charmbracelet/tap/crush"

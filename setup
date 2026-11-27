@@ -9,6 +9,39 @@
 set -e
 # set -x
 
+# --- ARGUMENTS ---
+# parsed first, so --help works even when a prerequisite is missing
+usage() {
+    cat << 'EOF'
+Usage: setup [--fonts] [--no-update]
+
+  --fonts      also install the Cascadia Code font
+  --no-update  use ~/unixenv as it is, without cloning or pulling
+  -h, --help   show this help
+
+When piped from curl, pass options after `bash -s --`.
+EOF
+}
+
+RUN_FONTS=false
+RUN_UPDATE=true
+for arg in "$@"; do
+    case "$arg" in
+        --fonts) RUN_FONTS=true ;;
+        --no-update) RUN_UPDATE=false ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Error: unknown option: $arg" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+# --- ARGUMENTS END ---
+
 # --- PREREQUISITES ---
 if [ "$(id -u)" -eq 0 ]; then
     echo "Error: running from root is not allowed."
@@ -33,17 +66,6 @@ else
 fi
 # --- PREREQUISITES END ---
 
-# --- ARGUMENTS ---
-RUN_FONTS=false
-RUN_UPDATE=true
-for arg in "$@"; do
-    case "$arg" in
-        --fonts) RUN_FONTS=true ;;
-        --no-update) RUN_UPDATE=false ;;
-    esac
-done
-# --- ARGUMENTS END ---
-
 # --- AUTOUPDATE ---
 get_script_path() {
     local source="${BASH_SOURCE[0]}"
@@ -66,8 +88,34 @@ get_checksum() {
 
 REPO_URL="https://github.com/hasansino/unixenv.git"
 CLONE_DIR="$HOME/unixenv"
+# piped from curl, bash reads this script from stdin and there is no file to compare or re-run
+PIPED=false
+if [ -z "${BASH_SOURCE[0]}" ]; then
+    PIPED=true
+fi
 
-if [ "$RUN_UPDATE" = true ]; then
+# Clone, or fast-forward master; a clone on another branch or with local changes is left alone.
+update_clone() {
+    if [ ! -d "$CLONE_DIR" ]; then
+        echo "Cloning git repo..."
+        git clone "$REPO_URL" "$CLONE_DIR"
+        return
+    fi
+    local branch
+    branch="$(git -C "$CLONE_DIR" symbolic-ref --short -q HEAD || true)"
+    if [ "$branch" != "master" ]; then
+        echo "Skipping update: $CLONE_DIR is on ${branch:-a detached HEAD}, not master."
+    elif [ -n "$(git -C "$CLONE_DIR" status --porcelain)" ]; then
+        echo "Skipping update: $CLONE_DIR has uncommitted changes."
+    else
+        echo "Updating git repo..."
+        git -C "$CLONE_DIR" pull --ff-only origin master
+    fi
+}
+
+if [ "$RUN_UPDATE" = true ] && [ "$PIPED" = true ]; then
+    update_clone
+elif [ "$RUN_UPDATE" = true ]; then
     SCRIPT_PATH=$(get_script_path)
     echo "Script path: $SCRIPT_PATH"
     if [ ! -f "$SCRIPT_PATH" ]; then
@@ -77,13 +125,7 @@ if [ "$RUN_UPDATE" = true ]; then
     OLD_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
     echo "Old checksum: $OLD_CHECKSUM"
 
-    if [ -d "$CLONE_DIR" ]; then
-        echo "Updating git repo..."
-        git -C "$CLONE_DIR" pull origin master
-    else
-        echo "Cloning git repo..."
-        git clone "$REPO_URL" "$CLONE_DIR"
-    fi
+    update_clone
 
     NEW_CHECKSUM=$(get_checksum "$SCRIPT_PATH")
     echo "New checksum: $NEW_CHECKSUM"
@@ -94,6 +136,11 @@ if [ "$RUN_UPDATE" = true ]; then
 elif [ ! -d "$CLONE_DIR" ]; then
     echo "Error: $CLONE_DIR not found, --no-update needs an existing clone."
     exit 1
+fi
+
+if [ "$PIPED" = true ]; then
+    # The clone is current now. Its copy must not inherit stdin, which holds the rest of this script.
+    exec "$CLONE_DIR/setup" --no-update "$@" < /dev/null
 fi
 # --- AUTOUPDATE END ---
 
@@ -134,6 +181,12 @@ update_file() {
 }
 
 packages() {
+    # Homebrew loads formulas from third-party taps only once they are trusted (stored per user).
+    # Trust the single formula the Brewfile needs, not the whole tap; older Homebrew has no such check.
+    if brew trust --help > /dev/null 2>&1; then
+        brew tap charmbracelet/tap
+        brew trust --formula charmbracelet/tap/crush
+    fi
     brew bundle --file="$CLONE_DIR/src/Brewfile"
     uv tool install -U --python 3.13 posting
     # screensavers for alias `ssrs`; cargo skips crates that are already up to date
@@ -141,44 +194,82 @@ packages() {
     cargo install --locked --git https://github.com/lhvy/pipes-rs pipes-rs
 }
 
-# copy a config file, keeping the previous version as .bak when it differs
+# copy a file to <file>.<timestamp>.bak, keeping only the newest BACKUPS_KEPT copies
+BACKUPS_KEPT=5
+backup_file() {
+    local target="$1"
+    local backup
+    backup="$target.$(date +%Y%m%d-%H%M%S).bak"
+    cp "$target" "$backup"
+    echo "Backed up $target to $backup"
+    # the glob sorts by name, which is oldest first for these timestamps
+    local backups=("$target".*.bak)
+    local excess=$((${#backups[@]} - BACKUPS_KEPT))
+    if [ "$excess" -gt 0 ]; then
+        rm -f "${backups[@]:0:excess}"
+    fi
+}
+
+# copy a config file, backing up the previous version when it differs
 install_config() {
     local source="$1"
     local target="$2"
 
     mkdir -p "$(dirname "$target")"
     if [ -f "$target" ] && ! cmp -s "$source" "$target"; then
-        cp "$target" "$target.bak"
-        echo "Backed up $target to $target.bak"
+        backup_file "$target"
     fi
     cp "$source" "$target"
 }
 
 configs() {
     # ssh
-    install_config "$CLONE_DIR/src/generic/.config/.ssh/config" "$HOME/.ssh/config"
+    install_config "$CLONE_DIR/src/generic/config/ssh/config" "$HOME/.ssh/config"
     touch "$HOME/.ssh/config_hosts"
-    # nano
-    install_config "$CLONE_DIR/src/generic/.config/.nanorc" "$HOME/.nanorc"
     # git
-    install_config "$CLONE_DIR/src/generic/.config/.gitconfig" "$HOME/.gitconfig"
-    install_config "$CLONE_DIR/src/generic/.config/.gitignore" "$HOME/.gitignore"
+    install_config "$CLONE_DIR/src/generic/config/gitconfig" "$HOME/.gitconfig"
+    install_config "$CLONE_DIR/src/generic/config/gitignore" "$HOME/.gitignore"
     # btm
-    install_config "$CLONE_DIR/src/generic/.config/btm.toml" "$HOME/.config/btm.toml"
+    install_config "$CLONE_DIR/src/generic/config/btm.toml" "$HOME/.config/btm.toml"
     # htop
-    install_config "$CLONE_DIR/src/generic/.config/htop/htoprc" "$HOME/.config/htop/htoprc"
+    install_config "$CLONE_DIR/src/generic/config/htop/htoprc" "$HOME/.config/htop/htoprc"
     # eza
-    install_config "$CLONE_DIR/src/generic/.config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
+    install_config "$CLONE_DIR/src/generic/config/eza/theme.yml" "$HOME/.config/eza/theme.yml"
+    # ripgrep, through RIPGREP_CONFIG_PATH in the shell rc
+    install_config "$CLONE_DIR/src/generic/config/ripgrep/config" "$HOME/.config/ripgrep/config"
     # generic
     touch "$HOME/.hushlogin"
     # a bit more complicated cases
+    config_nano
     config_docker
+    config_mc
+}
+
+config_nano() {
+    # nanorc cannot read $HOME or the brew prefix, which differs between darwin and linux, so both are added here.
+    # Backups live outside /tmp, which the system cleans; nano does not start when backupdir is missing.
+    local backup_dir="$HOME/.local/state/nano/backups"
+    local syntax_dir
+    syntax_dir="$(brew --prefix)/share/nano"
+    local tmp
+    tmp=$(mktemp)
+    mkdir -p "$backup_dir"
+    cat "$CLONE_DIR/src/generic/config/nanorc" > "$tmp"
+    printf 'set backupdir "%s"\n' "$backup_dir" >> "$tmp"
+    if [ -d "$syntax_dir" ]; then
+        printf '\n# syntax highlighting shipped with brew nano, added by setup\ninclude "%s/*.nanorc"\n' "$syntax_dir" >> "$tmp"
+    else
+        echo "config_nano warning: $syntax_dir not found, nano starts without syntax highlighting." >&2
+    fi
+    chmod 644 "$tmp" # mktemp creates 600, and cp gives a new file the source mode
+    install_config "$tmp" "$HOME/.nanorc"
+    rm "$tmp"
 }
 
 config_docker() {
     local CONFIG_DIR="$HOME/.docker"
     local CONFIG_FILE="$CONFIG_DIR/config.json"
-    local GENERIC_CONFIG="$CLONE_DIR/src/generic/.config/docker/config.json"
+    local GENERIC_CONFIG="$CLONE_DIR/src/generic/config/docker/config.json"
 
     if ! command -v jq > /dev/null 2>&1; then
         echo "config_docker error: jq is required but not installed." >&2
@@ -193,17 +284,56 @@ config_docker() {
     else
         local tmp
         tmp=$(mktemp)
-        jq -s '.[0] * .[1]' "$CONFIG_FILE" "$GENERIC_CONFIG" > "$tmp" \
-            && cp "$CONFIG_FILE" "$CONFIG_FILE.bak" \
-            && mv "$tmp" "$CONFIG_FILE"
-        echo "Merged $GENERIC_CONFIG into $CONFIG_FILE (backup at $CONFIG_FILE.bak)"
+        if ! jq -s '.[0] * .[1]' "$CONFIG_FILE" "$GENERIC_CONFIG" > "$tmp"; then
+            echo "config_docker warning: $CONFIG_FILE is not valid JSON, left unchanged." >&2
+            rm -f "$tmp"
+            return 0
+        fi
+        # jq reformats the file, so compare parsed JSON: back up and replace only when a value changes
+        if jq -e --slurpfile merged "$tmp" '. == $merged[0]' "$CONFIG_FILE" > /dev/null; then
+            rm "$tmp"
+        else
+            backup_file "$CONFIG_FILE"
+            mv "$tmp" "$CONFIG_FILE"
+            echo "Merged $GENERIC_CONFIG into $CONFIG_FILE"
+        fi
     fi
+}
+
+config_mc() {
+    local CONFIG_DIR="$HOME/.config/mc"
+    local SOURCE_DIR="$CLONE_DIR/src/generic/config/mc"
+    local BREW_PREFIX
+    BREW_PREFIX="$(brew --prefix)"
+    local SYSTEM_EXT="$BREW_PREFIX/etc/mc/mc.ext.ini"
+
+    install_config "$SOURCE_DIR/ini" "$CONFIG_DIR/ini"
+
+    if [ ! -f "$SYSTEM_EXT" ]; then
+        echo "config_mc error: $SYSTEM_EXT not found, is midnight-commander installed?" >&2
+        return 1
+    fi
+    # mc reads only the user extension file once it exists, so ours is followed by the system rules.
+    # Those name the versioned Cellar path, which brew removes on upgrade; the opt link stays.
+    local tmp
+    tmp=$(mktemp)
+    {
+        cat "$SOURCE_DIR/mc.ext.ini"
+        sed "s|$BREW_PREFIX/Cellar/midnight-commander/[^/]*/|$BREW_PREFIX/opt/midnight-commander/|g" "$SYSTEM_EXT"
+    } > "$tmp"
+    chmod 644 "$tmp" # mktemp creates 600, and cp gives a new file the source mode
+    install_config "$tmp" "$CONFIG_DIR/mc.ext.ini"
+    rm "$tmp"
 }
 
 scripts() {
     mkdir -p "$HOME/.local/bin"
     ln -sf "$CLONE_DIR/src/bin/goenv-scp" "$HOME/.local/bin/goenv-scp" # alias `goenv`
     ln -sf "$CLONE_DIR/src/bin/back-opt" "$HOME/.local/bin/back-opt"
+    ln -sf "$CLONE_DIR/src/bin/cheat" "$HOME/.local/bin/cheat"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        ln -sf "$CLONE_DIR/src/macos/power" "$HOME/.local/bin/power"
+    fi
 }
 
 fonts() {
@@ -271,6 +401,8 @@ macos_defaults() {
     # faster dock speed
     defaults write com.apple.dock autohide-delay -float 0
     defaults write com.apple.dock autohide-time-modifier -float 0.15
+    # running Dock and Finder keep their old values; setup does not restart them under the user
+    echo "Dock and Finder settings take effect after logout (or run: killall Dock Finder)."
 
     if ! [ -f "/opt/.metadata_never_index" ]; then
         echo "Directory '/opt' is not excluded from spotlight indexing."
@@ -278,14 +410,9 @@ macos_defaults() {
     fi
 }
 
+# Shell files are written last: they call the installed tools and expect the installed configs,
+# so a failed package install leaves the previous, working shell setup in place.
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # .zprofile
-    update_file "$(cat "$CLONE_DIR/src/macos/.zprofile")" "$HOME/.zprofile"
-    # .zshrc
-    update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/macos/.zshrc")" "$HOME/.zshrc"
-    # .zsh_aliases
-    update_file "$(cat "$CLONE_DIR/src/macos/.zsh_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.zsh_aliases"
-    # modules
     packages
     configs
     scripts
@@ -293,20 +420,25 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     if [ "$RUN_FONTS" = true ]; then
         fonts
     fi
+    # .zprofile
+    update_file "$(cat "$CLONE_DIR/src/macos/zprofile")" "$HOME/.zprofile"
+    # .zshrc
+    update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/macos/zshrc")" "$HOME/.zshrc"
+    # .zsh_aliases
+    update_file "$(cat "$CLONE_DIR/src/macos/zsh_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.zsh_aliases"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    # .bash_profile
-    update_file "$(cat "$CLONE_DIR/src/linux/.bash_profile")" "$HOME/.bash_profile"
-    # .bashrc
-    update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/linux/.bashrc")" "$HOME/.bashrc"
-    # .bash_aliases
-    update_file "$(cat "$CLONE_DIR/src/linux/.bash_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.bash_aliases"
-    # modules
     packages
     configs
     scripts
     if [ "$RUN_FONTS" = true ]; then
         fonts
     fi
+    # .bash_profile
+    update_file "$(cat "$CLONE_DIR/src/linux/bash_profile")" "$HOME/.bash_profile"
+    # .bashrc
+    update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/linux/bashrc")" "$HOME/.bashrc"
+    # .bash_aliases
+    update_file "$(cat "$CLONE_DIR/src/linux/bash_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.bash_aliases"
 fi
 
 echo "Finished."

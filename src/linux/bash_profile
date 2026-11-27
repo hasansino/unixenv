@@ -1,0 +1,25 @@
+# linux profile
+# executed once per login session
+
+if [ -d "$HOME/.cargo/bin" ]; then
+    PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+if [ -d "$HOME/bin" ]; then
+    PATH="$HOME/bin:$PATH"
+fi
+
+if [ -d "$HOME/.local/bin" ]; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+
+# bash reads only the first of .bash_profile and .profile, so read .profile too:
+# Ubuntu and installers such as rustup add PATH entries there.
+if [ -f "$HOME/.profile" ]; then
+    . "$HOME/.profile"
+fi
+
+# Ubuntu's .profile already sources .bashrc; the end of the managed .bashrc block sets this flag.
+if [ -z "$UNIXENV_BASHRC_LOADED" ] && [ -f "$HOME/.bashrc" ]; then
+    . "$HOME/.bashrc"
+fi

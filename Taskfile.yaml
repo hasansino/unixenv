@@ -31,11 +31,9 @@ set:
 vars:
   # Sourced bash dotfiles have no shebang; setup also joins src/generic/* into the zsh files.
   BASH_SOURCED_FILES: >-
-    src/generic/aliases src/generic/rc src/linux/.bash_aliases src/linux/.bash_profile src/linux/.bashrc
-  ZSH_FILES: src/macos/.zprofile src/macos/.zshrc src/macos/.zsh_aliases
+    src/generic/aliases src/generic/rc src/linux/bash_aliases src/linux/bash_profile src/linux/bashrc
+  ZSH_FILES: src/macos/zprofile src/macos/zshrc src/macos/zsh_aliases
   SHFMT_FLAGS: -i 4 -ci -sr -bn
-  # Exported by applications: checked for valid JSON only, never reformatted.
-  JSON_EXPORTS: src/macos/.config/iterm2.profile.json
 
 env:
   MISE_DEFAULT_CONFIG_FILENAME: etc/mise.toml
@@ -244,13 +242,12 @@ tasks:
     desc: "Check JSON source formatting, or explicit files (read only)"
     summary: |-
       Usage: task lint:json [-- FILE.json ...]
-      Defaults to Git source JSON files; application exports are only checked for valid JSON.
+      Defaults to Git source JSON files.
     vars:
       SOURCE_FILES:
         sh: |
           {{if not .CLI_ARGS}}
-          git ls-files --cached --others --exclude-standard -z -- '*.json' \
-            {{range splitList " " .JSON_EXPORTS}}':!:{{.}}' {{end}}
+          git ls-files --cached --others --exclude-standard -z -- '*.json'
           {{end}}
     preconditions:
       - *file_paths
@@ -262,12 +259,6 @@ tasks:
             mise exec -- jsonfmt "$file"
           fi
         done
-      - |
-        {{if not .CLI_ARGS}}
-        for file in {{.JSON_EXPORTS}}; do
-          mise exec -- jq empty "$file"
-        done
-        {{end}}
 
   lint:yaml:
     desc: "Check YAML source formatting, or explicit files (read only)"
@@ -329,14 +320,14 @@ tasks:
       Uses the system git and ssh, which parse each file and fail on malformed lines or unknown options.
     cmds:
       - |
-        for file in src/generic/.config/.gitconfig src/generic/.config/.gitconfig.gpg; do
+        for file in src/generic/config/gitconfig src/generic/config/gitconfig.gpg; do
           printf 'Checking %s\n' "$file"
           git config --file "$file" --list > /dev/null
         done
       - |
-        printf 'Checking %s\n' src/generic/.config/.ssh/config
+        printf 'Checking %s\n' src/generic/config/ssh/config
         # -G prints the resolved settings without connecting; -T skips the pseudo-terminal notice.
-        ssh -T -G -F src/generic/.config/.ssh/config example.invalid < /dev/null > /dev/null
+        ssh -T -G -F src/generic/config/ssh/config example.invalid < /dev/null > /dev/null
 
   lint:secrets:
     desc: "Scan Git history, or explicit files, for secrets with Gitleaks"

@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# The unixenv cheat sheet: cheat.md in the repository, shown in fzf.
+#
+# Type to filter: `git` keeps the Git section, `docker logs` keeps the rows holding both words.
+# The page is rendered again whenever the window is resized.
+# Scroll with the mouse wheel, ↑/↓, PgUp/PgDn or Ctrl-U/Ctrl-D; Esc quits.
+#
+# Usage: cheat [filter words]
+
+set -euo pipefail
+
+SHEET="$HOME/unixenv/cheat.md"
+# Rendering wider stretches the table columns across the whole screen.
+MAX_WIDTH=100
+
+# Print the sheet, keeping the table rows that contain every filter word (any case), counting the
+# words of their section heading too: `git` keeps the Git section, `docker logs` its rows about logs.
+# Sections left without rows are dropped.
+filter_sheet() {
+    awk -v query="$1" '
+        BEGIN { count = split(tolower(query), words, /[[:space:]]+/) }
+        function matches(text,    i, lower) {
+            lower = tolower(text)
+            for (i = 1; i <= count; i++) {
+                if (words[i] != "" && index(lower, words[i]) == 0) return 0
+            }
+            return 1
+        }
+        function flush_section() {
+            if (kept > 0) printf "%s\n%s%s\n", heading, header, rows
+            heading = ""; header = ""; rows = ""; kept = 0; header_lines = 0
+        }
+        /^# / { print; print ""; next }
+        /^## / { flush_section(); heading = $0 "\n"; heading_text = $0; next }
+        /^\|/ {
+            if (header_lines < 2) { header = header $0 "\n"; header_lines++; next }
+            if (matches(heading_text " " $0)) { rows = rows $0 "\n"; kept++ }
+            next
+        }
+        END { flush_section() }
+    ' "$SHEET"
+}
+
+# fzf calls this for the preview: cheat --render COLUMNS [filter words]
+if [ "${1:-}" = "--render" ]; then
+    columns="$2"
+    shift 2
+    width=$((columns < MAX_WIDTH ? columns : MAX_WIDTH))
+    page=$(filter_sheet "$*")
+    if ! printf '%s\n' "$page" | grep -q '^|'; then
+        page="$(printf '%s\n\nNothing matches: %s' "$(head -n 1 "$SHEET")" "$*")"
+    fi
+    # TERM=dumb: otherwise glow asks the terminal for its colors and waits for an answer,
+    # which inside fzf would arrive as typed keys. The explicit style keeps the colors.
+    printf '%s\n' "$page" | TERM=dumb glow --style dark --width "$width" -
+    exit 0
+fi
+
+if [ ! -f "$SHEET" ]; then
+    echo "cheat: $SHEET not found; is unixenv cloned to ~/unixenv?" >&2
+    exit 1
+fi
+
+# The fzf list stays empty: the query only filters what the preview renders.
+status=0
+fzf --disabled --query "$*" --prompt 'cheat › ' --info hidden --layout reverse \
+    --preview "$(printf '%q' "$0") --render \"\$FZF_PREVIEW_COLUMNS\" {q}" \
+    --preview-window 'down,99%,border-top' --preview-label ' type to filter · ↑↓ scroll · Esc quits ' \
+    --bind 'change:refresh-preview,resize:refresh-preview' \
+    --bind 'up:preview-up,down:preview-down,page-up:preview-page-up,page-down:preview-page-down' \
+    --bind 'ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down,enter:ignore' \
+    < /dev/null || status=$?
+# 1 means nothing was picked and 130 means Esc; anything else is an fzf error worth reporting.
+case "$status" in
+    0 | 1 | 130) exit 0 ;;
+    *) exit "$status" ;;
+esac

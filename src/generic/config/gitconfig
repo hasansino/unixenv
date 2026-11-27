@@ -3,7 +3,8 @@ name = hasansino
 email = 4024450+hasansino@users.noreply.github.com
 
 [help]
-autocorrect = 1
+# ask before running the command a typo most likely meant
+autocorrect = prompt
 
 [core]
 excludesfile = ~/.gitignore
@@ -34,6 +35,19 @@ ui = auto
 [rerere]
 enabled = true
 
+[merge]
+# conflict markers also show the common ancestor, without the lines both sides share
+conflictStyle = zdiff3
+
+[diff]
+algorithm = histogram
+# moved lines get their own colors instead of showing as removed and added
+colorMoved = zebra
+
+[fetch]
+# drop local refs to branches deleted on the remote
+prune = true
+
 [rebase]
 autosquash = true
 autostash = true
@@ -43,6 +57,8 @@ path = ~/.gitconfig.local
 
 [branch]
 autoSetupMerge = always
+# git branch lists the most recently committed branches first
+sort = -committerdate
 
 [pager]
     diff = diff-so-fancy | less --tabs=4 -RFX

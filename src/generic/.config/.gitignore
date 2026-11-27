@@ -1,7 +1,0 @@
-.DS_Store
-
-.idea/
-.vscode/
-
-_Makefile
-_docker-compose.yml
