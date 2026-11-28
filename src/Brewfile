@@ -37,7 +37,6 @@ brew "jq"
 brew "midnight-commander"
 brew "tig"
 brew "tlrc"
-brew "uv"
 brew "yq"
 
 # monitoring
@@ -57,8 +56,6 @@ brew "tmux"
 brew "zellij"
 
 # screensavers
-brew "astroterm"
-brew "cbonsai"
 brew "pipes-sh"
 
 # fonts

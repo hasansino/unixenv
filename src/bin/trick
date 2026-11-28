@@ -1,0 +1,171 @@
+#!/bin/bash
+
+# Shows one trick from src/share/tricks.yaml: a card, a live demo typed out and run,
+# then ⏎ puts the trick's command on your command line, n shows another, q quits.
+#
+# Tricks you have seen are remembered (one title per line in the state file below), so new
+# ones come first; once all are seen, a new round starts. Tricks for another OS, or whose tool
+# is not installed, are skipped.
+#
+# The `trick` shell function (src/generic/aliases.sh) runs this script with TRICK_NEXT_FILE
+# set: the chosen command is written there, and the function puts it on the command line.
+#
+# Usage: trick
+
+set -euo pipefail
+
+REPO="$HOME/unixenv"
+TRICKS="$REPO/src/share/tricks.yaml"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/unixenv"
+SEEN="$STATE_DIR/tricks-seen"
+MAX_WIDTH=80
+DEMO_LINES=15
+TYPE_DELAY=0.012
+
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+GREEN=$'\033[32m'
+CYAN=$'\033[36m'
+MAGENTA=$'\033[35m'
+RESET=$'\033[0m'
+
+if [ ! -f "$TRICKS" ]; then
+    echo "trick: $TRICKS not found; is unixenv cloned to ~/unixenv?" >&2
+    exit 1
+fi
+if ! command -v yq > /dev/null 2>&1; then
+    echo "trick: needs yq, which setup installs; run unixenv" >&2
+    exit 1
+fi
+
+# Print each trick as one line: title, tool, os, demo, try, text; fields separated by \037,
+# newlines in the text replaced by \035.
+parse_tricks() {
+    SEP=$'\037' NL=$'\035' yq -r '.[] | [.title, .tool // "", .os // "any", .demo // "", .try // "",
+        (.text | sub("\n+$"; "") | sub("\n"; strenv(NL)))] | join(strenv(SEP))' "$TRICKS"
+}
+
+# tricks for this OS whose tool is installed; each labeled with the systems it works on
+titles=() tools=() systems=() demos=() tries=() texts=()
+while IFS=$'\037' read -r title tool os demo try text; do
+    case "$os" in
+        macos)
+            [[ "$OSTYPE" == darwin* ]] || continue
+            system="macOS"
+            ;;
+        linux)
+            [[ "$OSTYPE" == linux* ]] || continue
+            system="Linux"
+            ;;
+        *) system="macOS + Linux" ;;
+    esac
+    if [ -n "$tool" ] && ! command -v "$tool" > /dev/null 2>&1; then
+        continue
+    fi
+    titles+=("$title")
+    tools+=("$tool")
+    systems+=("$system")
+    demos+=("$demo")
+    tries+=("$try")
+    texts+=("$text")
+done < <(parse_tricks)
+
+total=${#titles[@]}
+if [ "$total" -eq 0 ]; then
+    echo "trick: no tricks for this system in $TRICKS" >&2
+    exit 1
+fi
+
+mkdir -p "$STATE_DIR"
+touch "$SEEN"
+
+# indexes of the tricks not seen yet; starts a new round when all are seen
+pick_unseen() {
+    local seen i
+    seen=$'\n'"$(cat "$SEEN")"$'\n'
+    unseen=()
+    for ((i = 0; i < total; i++)); do
+        case "$seen" in
+            *$'\n'"${titles[i]}"$'\n'*) ;;
+            *) unseen+=("$i") ;;
+        esac
+    done
+    if [ "${#unseen[@]}" -eq 0 ]; then
+        printf '\n  %s✦ You have seen all %d tricks. Starting a new round.%s\n' "$MAGENTA" "$total" "$RESET"
+        : > "$SEEN"
+        pick_unseen
+    fi
+}
+
+width() {
+    local columns
+    columns=$(tput cols 2> /dev/null || echo "$MAX_WIDTH")
+    echo $((columns < MAX_WIDTH ? columns : MAX_WIDTH))
+}
+
+type_out() {
+    local text="$1" i
+    printf '  %s$%s ' "$GREEN" "$RESET"
+    for ((i = 0; i < ${#text}; i++)); do
+        printf '%s' "${text:i:1}"
+        sleep "$TYPE_DELAY"
+    done
+    printf '\n'
+}
+
+show() {
+    local i="$1" left="$2" text rule
+    text=$(printf '%s' "${texts[i]}" | tr '\035' '\n')
+    rule=$(printf '%*s' "$(($(width) - 4))" '' | tr ' ' '─')
+
+    printf '\n  %s✦ trick%s  %s%s%s  %s·%s  %s%s%s  %s·  %d of %d new%s\n' \
+        "$MAGENTA$BOLD" "$RESET" "$BOLD" "${tools[i]:-shell}" "$RESET" "$DIM" "$RESET" \
+        "$CYAN" "${systems[i]}" "$RESET" "$DIM" "$left" "$total" "$RESET"
+    printf '  %s%s%s\n' "$DIM" "$rule" "$RESET"
+    if command -v glow > /dev/null 2>&1; then
+        # TERM=dumb: otherwise glow asks the terminal for its colors; the explicit style keeps them.
+        printf '# %s\n\n%s\n' "${titles[i]}" "$text" | TERM=dumb glow --style dark --width "$(width)" -
+    else
+        printf '\n  %s%s%s\n\n%s\n\n' "$BOLD" "${titles[i]}" "$RESET" "$text"
+    fi
+
+    if [ -n "${demos[i]}" ]; then
+        type_out "${demos[i]}"
+        (cd "$REPO" && bash -c "${demos[i]}") < /dev/null 2>&1 | head -n "$DEMO_LINES" | sed 's/^/    /' || true
+    fi
+}
+
+while true; do
+    pick_unseen
+    i=${unseen[RANDOM % ${#unseen[@]}]}
+    echo "${titles[i]}" >> "$SEEN"
+    show "$i" "${#unseen[@]}"
+
+    # without a terminal (piped, scripted) show one trick and stop
+    if [ ! -t 0 ]; then
+        exit 0
+    fi
+    if [ -n "${tries[i]}" ]; then
+        printf '\n  %s⏎%s try %s%s%s   %sn%s another   %sq%s quit ' \
+            "$BOLD" "$RESET" "$GREEN" "${tries[i]}" "$RESET" "$BOLD" "$RESET" "$BOLD" "$RESET"
+    else
+        printf '\n  %sn%s another   %sq%s / %s⏎%s quit ' "$BOLD" "$RESET" "$BOLD" "$RESET" "$BOLD" "$RESET"
+    fi
+    key=""
+    IFS= read -rsn1 key || true
+    printf '\n'
+    case "$key" in
+        n | N) continue ;;
+        "")
+            if [ -n "${tries[i]}" ]; then
+                if [ -n "${TRICK_NEXT_FILE:-}" ]; then
+                    printf '%s\n' "${tries[i]}" > "$TRICK_NEXT_FILE"
+                else
+                    printf '  %s\n' "${tries[i]}"
+                fi
+            fi
+            exit 0
+            ;;
+        *) exit 0 ;;
+    esac
+done

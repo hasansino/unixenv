@@ -1,6 +1,5 @@
 # darwin aliases
 
 # alias ll='ls -alFhv'
-alias ds="du -c --si -d 1"
-
+alias ds='du -c --si -d 1'
 alias rmdsstore='sudo find /opt -name ".DS_Store" -type f -delete'

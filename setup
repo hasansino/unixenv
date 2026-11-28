@@ -1,13 +1,18 @@
 #!/bin/bash
 
-# Full setup with Homebrew. Without Homebrew or sudo, use setup.light.
-# Shared steps live in src/setup/lib.sh.
+# Full setup with Homebrew.
 #
 # Prerequisites: git & homebrew
 #
-# Install homebrew:
-# `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-# + sudo apt-get install build-essential procps curl file
+# Install homebrew: https://brew.sh/
+#
+# Linux also needs build tools (https://docs.brew.sh/Homebrew-on-Linux):
+#   Debian, Ubuntu:   sudo apt-get install build-essential procps curl file git
+#   Fedora:           sudo dnf group install development-tools
+#                     sudo dnf install procps-ng curl file git
+#   CentOS, RHEL:     sudo dnf group install 'Development Tools'
+#                     sudo dnf install procps-ng curl file git
+#   Arch:             sudo pacman -S base-devel procps-ng curl file git
 
 set -e
 
@@ -53,7 +58,6 @@ packages() {
     brew bundle --file="$CLONE_DIR/src/Brewfile"
     # Old versions and downloads otherwise pile up after every upgrade.
     brew cleanup --prune=all
-    uv tool install -U --python 3.13 posting
 }
 
 macos_defaults() {

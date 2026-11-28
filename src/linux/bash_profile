@@ -1,6 +1,9 @@
 # linux profile
 # executed once per login session
 
+# --- PATH ---
+# each entry goes in front, so the last one added is searched first: ~/.local/bin, mise's shims, ~/bin, ~/.cargo/bin
+
 if [ -d "$HOME/.cargo/bin" ]; then
     PATH="$HOME/.cargo/bin:$PATH"
 fi
@@ -17,6 +20,8 @@ fi
 if [ -d "$HOME/.local/bin" ]; then
     PATH="$HOME/.local/bin:$PATH"
 fi
+
+# --- startup files ---
 
 # bash reads only the first of .bash_profile and .profile, so read .profile too:
 # Ubuntu and installers such as rustup add PATH entries there.

@@ -82,7 +82,6 @@
 | `mc`                          | file manager; quitting leaves you in its folder                    |
 | `broot`                       | tree navigator; `broot --install` adds `br`                        |
 | `dc logs -f \| gonzo`         | log analysis UI                                                    |
-| `posting`                     | HTTP client UI                                                     |
 | `jq` · `yq`                   | query JSON · YAML                                                  |
 | `hf 'cmd'` · `watch -n 5 cmd` | benchmark · repeat a command                                       |
 | `gping host1 host2`           | live ping graph, several hosts side by side                        |
@@ -112,7 +111,8 @@
 | Command                  | What it does                                                                    |
 |--------------------------|---------------------------------------------------------------------------------|
 | `cheat` · `unixenv`      | this page · re-run setup (setup.light on hosts set up without Homebrew)         |
-| `ss`                     | random terminal screensaver                                                     |
+| `trick`                  | one trick with a live demo; ⏎ puts its command on your command line             |
+| `saver`                  | pipes screensaver (pipes.sh); `-h` lists its options                            |
 | `power on` · `power off` | macOS deep sleep off · back on (sudo)                                           |
 | `rmdsstore`              | delete .DS_Store under /opt (macOS, sudo)                                       |
 | `motd-quiet`             | turn off Ubuntu's login messages, keep the reboot-required notice (Linux, sudo) |

@@ -5,7 +5,7 @@
 # keypad, and enhanced keyboard protocols. When a connection drops, the switch back never arrives
 # and every mouse move prints escape codes.
 #
-# Used by the ssh function (src/generic/aliases) and hop after a dropped connection, and by hand on
+# Used by the ssh function (src/generic/aliases.sh) and hop after a dropped connection, and by hand on
 # a garbled window. Unlike `reset` it keeps the screen and the scrollback.
 #
 # Usage: term-reset

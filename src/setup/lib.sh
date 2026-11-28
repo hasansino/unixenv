@@ -318,6 +318,7 @@ scripts() {
     ln -sf "$CLONE_DIR/src/bin/cheat" "$HOME/.local/bin/cheat"
     ln -sf "$CLONE_DIR/src/bin/hop" "$HOME/.local/bin/hop"
     ln -sf "$CLONE_DIR/src/bin/term-reset" "$HOME/.local/bin/term-reset"
+    ln -sf "$CLONE_DIR/src/bin/trick" "$HOME/.local/bin/trick"
     if [[ "$OSTYPE" == "darwin"* ]]; then
         ln -sf "$CLONE_DIR/src/bin/power" "$HOME/.local/bin/power"
     else
@@ -330,11 +331,11 @@ scripts() {
 shell_files() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         update_file "$(cat "$CLONE_DIR/src/macos/zprofile")" "$HOME/.zprofile"
-        update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/macos/zshrc")" "$HOME/.zshrc"
-        update_file "$(cat "$CLONE_DIR/src/macos/zsh_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.zsh_aliases"
+        update_file "$(cat "$CLONE_DIR/src/generic/rc.sh" "$CLONE_DIR/src/macos/zshrc")" "$HOME/.zshrc"
+        update_file "$(cat "$CLONE_DIR/src/macos/zsh_aliases" "$CLONE_DIR/src/generic/aliases.sh")" "$HOME/.zsh_aliases"
     else
         update_file "$(cat "$CLONE_DIR/src/linux/bash_profile")" "$HOME/.bash_profile"
-        update_file "$(cat "$CLONE_DIR/src/generic/rc" "$CLONE_DIR/src/linux/bashrc")" "$HOME/.bashrc"
-        update_file "$(cat "$CLONE_DIR/src/linux/bash_aliases" "$CLONE_DIR/src/generic/aliases")" "$HOME/.bash_aliases"
+        update_file "$(cat "$CLONE_DIR/src/generic/rc.sh" "$CLONE_DIR/src/linux/bashrc")" "$HOME/.bashrc"
+        update_file "$(cat "$CLONE_DIR/src/linux/bash_aliases" "$CLONE_DIR/src/generic/aliases.sh")" "$HOME/.bash_aliases"
     fi
 }

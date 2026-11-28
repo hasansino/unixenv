@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# Checks src/share/tricks.yaml, the tricks shown by the `trick` command.
+#
+# --lint: the fields only, on any system (CI runs it with task lint):
+# - the file is a list, each trick has a title and a text, and only the known fields
+# - every value is a string, os is macos, linux or any, titles are unique
+# - texts have at most 3 lines, as the cards are meant to stay short
+#
+# Without --lint, also runs the demos of this system's tricks from the repository, as `trick`
+# does, and fails on demos that print nothing, print an error, or take over a second. Tricks
+# whose tool is not installed here are listed as skipped.
+#
+# Usage: task lint:tricks | task test:tricks
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+TRICKS="$REPO_DIR/src/share/tricks.yaml"
+FIELDS='["title", "tool", "os", "demo", "try", "text"]'
+MAX_TEXT_LINES=3
+MAX_SECONDS=1.0
+ERROR_PATTERN='command not found|No such file or directory|[Uu]nknown (option|argument)|invalid option|error:'
+
+FAILURES=0
+fail() {
+    echo "FAIL: $*" >&2
+    FAILURES=$((FAILURES + 1))
+}
+
+# lines printed by a yq expression are problems, one per line
+check() {
+    local message="$1" expression="$2" line
+    while IFS= read -r line; do
+        [ -n "$line" ] && fail "$message: $line"
+    done < <(yq -r "$expression" "$TRICKS")
+}
+
+echo "==> checking fields in $TRICKS"
+if [ "$(yq -r 'tag' "$TRICKS")" != '!!seq' ]; then
+    fail "the file must be a list of tricks"
+    exit 1
+fi
+check "trick without a title or text" '.[] | select(.title == null or .text == null) | (.title // "(no title)")'
+check "unknown field" ".[] | select((keys - $FIELDS) | length > 0) | .title + \": \" + ((keys - $FIELDS) | join(\", \"))"
+# shellcheck disable=SC2016 # $t is a yq variable, not a shell one
+check "not a string" '.[] | .title as $t | to_entries | .[] | select(.value | tag != "!!str") | $t + ": " + .key'
+check "os must be macos, linux or any" '.[] | select(.os != null and .os != "macos" and .os != "linux" and .os != "any") | .title'
+check "text longer than $MAX_TEXT_LINES lines" ".[] | select(.text | sub(\"\n+\$\"; \"\") | split(\"\n\") | length > $MAX_TEXT_LINES) | .title"
+while IFS= read -r title; do
+    fail "duplicate title: $title"
+done < <(yq -r '.[].title' "$TRICKS" | sort | uniq -d)
+echo "$(yq -r 'length' "$TRICKS") tricks"
+
+if [ "${1:-}" != "--lint" ]; then
+    echo "==> running the demos for this system"
+    case "$OSTYPE" in
+        darwin*) system=macos ;;
+        linux*) system=linux ;;
+        *) system=unknown ;;
+    esac
+    ran=0
+    skipped=()
+    work_dir="$(mktemp -d)"
+    trap 'rm -rf "$work_dir"' EXIT
+    while IFS=$'\037' read -r title tool demo; do
+        if [ -n "$tool" ] && ! command -v "$tool" > /dev/null 2>&1; then
+            skipped+=("$title ($tool)")
+            continue
+        fi
+        # bash's time keyword reports the seconds; TIMEFORMAT keeps only that number. The demo's
+        # redirections stay inside the subshell: on the timed command they would take the report too.
+        TIMEFORMAT=%R
+        { time (cd "$REPO_DIR" && bash -c "$demo" < /dev/null > "$work_dir/out" 2>&1); } 2> "$work_dir/time" || true
+        seconds=$(tail -n 1 "$work_dir/time")
+        ran=$((ran + 1))
+        if [ ! -s "$work_dir/out" ]; then
+            fail "$title: the demo printed nothing"
+        elif grep -qE "$ERROR_PATTERN" "$work_dir/out"; then
+            fail "$title: the demo printed an error: $(grep -m 1 -E "$ERROR_PATTERN" "$work_dir/out")"
+        elif awk -v s="$seconds" -v max="$MAX_SECONDS" 'BEGIN { exit !(s > max) }'; then
+            fail "$title: the demo took ${seconds}s, more than ${MAX_SECONDS}s"
+        else
+            printf '  ok %5ss  %s\n' "$seconds" "$title"
+        fi
+    done < <(SEP=$'\037' SYSTEM="$system" yq -r '.[] | select(.demo != null)
+        | select((.os // "any") == "any" or .os == strenv(SYSTEM))
+        | [.title, .tool // "", .demo] | join(strenv(SEP))' "$TRICKS")
+    echo "$ran demos run"
+    if [ "${#skipped[@]}" -gt 0 ]; then
+        echo "skipped, tool not installed:"
+        printf '  %s\n' "${skipped[@]}"
+    fi
+fi
+
+if [ "$FAILURES" -gt 0 ]; then
+    echo "$FAILURES check(s) failed" >&2
+    exit 1
+fi
+echo "Tricks are fine."

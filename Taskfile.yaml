@@ -31,8 +31,8 @@ set:
 vars:
   # Sourced bash files (dotfiles, src/setup/lib.sh) have no shebang; setup also joins src/generic/* into the zsh files.
   BASH_SOURCED_FILES: >-
-    src/generic/aliases
-    src/generic/rc
+    src/generic/aliases.sh
+    src/generic/rc.sh
     src/linux/bash_aliases
     src/linux/bash_profile
     src/linux/bashrc
@@ -163,6 +163,15 @@ tasks:
     cmds:
       - "bash tests/hop"
 
+  test:tricks:
+    desc: "Check src/share/tricks.yaml and run its demos for this system (read only)"
+    summary: |-
+      Usage: task test:tricks
+      Runs lint:tricks, then every demo for this OS whose tool is installed, from the repository, as `trick` does.
+      Fails on demos that print nothing, print an error, or take over a second; tricks whose tool is missing are listed.
+    cmds:
+      - "mise exec -- bash tests/tricks"
+
   # ╭────────────────────----------------──────────╮
   # │                  Formatters                  │
   # ╰─────────────────────----------------─────────╯
@@ -250,6 +259,7 @@ tasks:
       - task: "lint:yaml"
       - task: "lint:toml"
       - task: "lint:config"
+      - task: "lint:tricks"
       - task: "lint:secrets"
 
   lint:shell:
@@ -355,6 +365,15 @@ tasks:
         printf 'Checking %s\n' src/generic/config/ssh/config
         # -G prints the resolved settings without connecting; -T skips the pseudo-terminal notice.
         ssh -T -G -F src/generic/config/ssh/config example.invalid < /dev/null > /dev/null
+
+  lint:tricks:
+    desc: "Check the fields of src/share/tricks.yaml (read only)"
+    summary: |-
+      Usage: task lint:tricks
+      Known fields only, all strings, a title and a text in each, os macos, linux or any, unique titles, short texts.
+      Runs no demos, so it works on any system; test:tricks runs them.
+    cmds:
+      - "mise exec -- bash tests/tricks --lint"
 
   lint:secrets:
     desc: "Scan Git history, or explicit files, for secrets with Gitleaks"

@@ -47,7 +47,7 @@ jobs:
       - name: 'Test hop'
         run: task --exit-code test:hop
 
-  # JSON, YAML, and TOML formatting and lint rules; git and ssh configuration.
+  # JSON, YAML, and TOML formatting and lint rules; git and ssh configuration; the tricks file.
   # @see https://github.com/caarlos0/jsonfmt
   # @see https://github.com/google/yamlfmt
   # @see https://github.com/tombi-toml/tombi
@@ -66,7 +66,7 @@ jobs:
       - name: 'Install pinned configuration linters'
         uses: ./.github/actions/setup-tools
         with:
-          install-args: --locked jsonfmt yamlfmt tombi jq
+          install-args: --locked jsonfmt yamlfmt tombi jq yq
       - name: 'Check JSON formatting'
         run: task --exit-code lint:json
       - name: 'Check YAML formatting'
@@ -75,3 +75,5 @@ jobs:
         run: task --exit-code lint:toml
       - name: 'Check git and ssh configuration'
         run: task --exit-code lint:config
+      - name: 'Check the fields of the tricks file'
+        run: task --exit-code lint:tricks

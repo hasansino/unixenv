@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# The unixenv cheat sheet: cheat.md in the repository, shown in fzf.
+# The unixenv cheat sheet: src/share/cheat.md in the repository, shown in fzf.
 #
 # Type to filter: `git` keeps the Git section, `docker logs` keeps the rows holding both words.
 # The page is rendered again whenever the window is resized.
@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-SHEET="$HOME/unixenv/cheat.md"
+SHEET="$HOME/unixenv/src/share/cheat.md"
 # Rendering wider stretches the table columns across the whole screen.
 MAX_WIDTH=100
 

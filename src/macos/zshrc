@@ -5,6 +5,8 @@ if [ -f ~/.zsh_aliases ]; then
     source ~/.zsh_aliases
 fi
 
+# --- history ---
+
 # the macOS defaults keep only 1000 lines
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=100000
@@ -12,11 +14,14 @@ SAVEHIST=100000
 # write each command as it runs and share it between open shells; skip repeats and commands starting with a space
 setopt share_history hist_ignore_dups hist_ignore_space
 
+# --- completion ---
+
 # brew shellenv in .zprofile exports FPATH with brew's completions; repeated here for non-login shells
 if [ -n "$HOMEBREW_PREFIX" ]; then
     fpath=("$HOMEBREW_PREFIX/share/zsh/site-functions" $fpath)
     typeset -U fpath
 fi
+
 # The full compinit (security audit and rebuild of the dump) runs at most once a day;
 # other shells load the cached dump. Delete ~/.zcompdump to pick up new completions sooner.
 autoload -Uz compinit
@@ -29,32 +34,46 @@ else
 fi
 unset zcompdump
 
-# Each tool only if installed, so a host without it starts silently (see AGENTS.md).
-# --no-cmd keeps z and zi from src/generic/rc
+# --- tools ---
+# each only if installed, so a host without it starts silently (see AGENTS.md)
+
+# --no-cmd keeps z and zi from src/generic/rc.sh
 if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init zsh --no-cmd)"
 fi
+
 if command -v navi > /dev/null 2>&1; then
     eval "$(navi widget zsh)"
 fi
-# Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc.
+
+# Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc.sh.
 # Only with a terminal: without one (scripts, the smoke test) the bindings print "can't change option: zle".
 if [ -t 0 ] && command -v fzf > /dev/null 2>&1; then
     source <(fzf --zsh)
 fi
+
 if command -v starship > /dev/null 2>&1; then
     eval "$(starship init zsh)"
 fi
+
 # loads and unloads a folder's .envrc on cd, once approved with `direnv allow`; after the prompt setup, as direnv asks
 if command -v direnv > /dev/null 2>&1; then
     eval "$(direnv hook zsh)"
 fi
 
-# Gray suggestions from history while typing; → accepts. Sourced before syntax highlighting, as both plugins require.
-if [ -f "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
-    source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-fi
-# Colors the command line as you type; it wraps every widget defined so far, so it must stay last.
-if [ -f "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
-    source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-fi
+# --- plugins ---
+
+# zsh-autosuggestions: gray suggestions from history while typing; → accepts.
+# zsh-syntax-highlighting: colors the command line as you type; it wraps every widget defined so far,
+# so it must stay last, after autosuggestions, as both plugins require.
+# From Homebrew, or from mise (conda packages) for setup.light.
+for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+    for file in "$HOMEBREW_PREFIX/share/$plugin/$plugin.zsh" \
+        "$HOME/.local/share/mise/installs/conda-$plugin/latest/share/zsh/plugins/$plugin/$plugin.zsh"; do
+        if [ -f "$file" ]; then
+            source "$file"
+            break
+        fi
+    done
+done
+unset plugin file

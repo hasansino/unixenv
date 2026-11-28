@@ -7,7 +7,7 @@
 # - each managed shell file holds exactly one UNIXENV block, and lines around it keep their position
 # - the second run leaves the managed shell files unchanged
 # - configuration files and script links are installed; for setup on macOS also the font cask,
-#   for setup.light mise and its tools
+#   for setup.light mise and its tools, and on macOS the font and zsh plugins
 # - a configuration file changed locally is backed up to .<timestamp>.bak before it is replaced
 # - a login interactive shell starts from a bare system PATH without writing to stderr, and finds fzf
 #
@@ -70,7 +70,7 @@ INSTALLED_FILES=(
     .docker/config.json
     .hushlogin
 )
-LINKED_SCRIPTS=(goenv-scp cheat hop term-reset)
+LINKED_SCRIPTS=(goenv-scp cheat hop term-reset trick)
 if [[ "$OSTYPE" == "darwin"* ]]; then
     LINKED_SCRIPTS+=(power)
 else
@@ -131,9 +131,18 @@ if [ "$LIGHT" = true ]; then
     [ -x "$SMOKE_HOME/.local/bin/mise" ] || fail "missing ~/.local/bin/mise"
     [ -f "$SMOKE_HOME/.config/mise/conf.d/unixenv.toml" ] || fail "missing ~/.config/mise/conf.d/unixenv.toml"
     # a few tools from each source: aqua and github releases, conda-forge
-    for tool in fzf rg zellij tmux git nano mc mosh-server delta; do
+    for tool in fzf rg zellij tmux git nano mc mosh-server delta gonzo claude pipes.sh; do
         [ -e "$SMOKE_HOME/.local/share/mise/shims/$tool" ] || fail "missing mise shim for $tool"
     done
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        for file in CascadiaCode.ttf CascadiaCodeItalic.ttf; do
+            [ -f "$SMOKE_HOME/Library/Fonts/$file" ] || fail "missing ~/Library/Fonts/$file"
+        done
+        for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+            [ -f "$SMOKE_HOME/.local/share/mise/installs/conda-$plugin/latest/share/zsh/plugins/$plugin/$plugin.zsh" ] \
+                || fail "missing the $plugin script where ~/.zshrc looks for it"
+        done
+    fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # casks install for the whole machine, not into the temporary HOME
     brew list --cask font-cascadia-code > /dev/null 2>&1 || fail "the font-cascadia-code cask is not installed"

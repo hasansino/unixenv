@@ -5,40 +5,55 @@ if [ -f ~/.bash_aliases ]; then
     source ~/.bash_aliases
 fi
 
+# --- homebrew ---
+
 # here rather than in .bash_profile: terminals on linux desktops start non-login shells
 if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
 fi
 
-if type brew &> /dev/null; then
+# --- completion ---
+
+if command -v brew > /dev/null 2>&1; then
     HOMEBREW_PREFIX="$(brew --prefix)"
-    if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]; then
-        source "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+    if [ -r "$HOMEBREW_PREFIX/etc/profile.d/bash_completion.sh" ]; then
+        source "$HOMEBREW_PREFIX/etc/profile.d/bash_completion.sh"
     fi
-    for COMPLETION in "${HOMEBREW_PREFIX}/etc/bash_completion.d/"*; do
-        [[ -r "$COMPLETION" ]] && source "$COMPLETION"
+    for completion in "$HOMEBREW_PREFIX/etc/bash_completion.d/"*; do
+        if [ -r "$completion" ]; then
+            source "$completion"
+        fi
     done
+    unset completion
 fi
 
-# Each tool only if installed, so a host without it starts silently (see AGENTS.md).
-# --no-cmd keeps z and zi from src/generic/rc
-if command -v zoxide &> /dev/null; then
+# --- tools ---
+# each only if installed, so a host without it starts silently (see AGENTS.md)
+
+# --no-cmd keeps z and zi from src/generic/rc.sh
+if command -v zoxide > /dev/null 2>&1; then
     eval "$(zoxide init bash --no-cmd)"
 fi
-if command -v navi &> /dev/null; then
+
+if command -v navi > /dev/null 2>&1; then
     eval "$(navi widget bash)"
 fi
-# Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc
-if command -v fzf &> /dev/null; then
+
+# Ctrl-T files, Alt-C folders, Ctrl-R history; options in src/generic/rc.sh
+if command -v fzf > /dev/null 2>&1; then
     eval "$(fzf --bash)"
 fi
-if command -v starship &> /dev/null; then
+
+if command -v starship > /dev/null 2>&1; then
     eval "$(starship init bash)"
 fi
+
 # loads and unloads a folder's .envrc on cd, once approved with `direnv allow`; after the prompt setup, as direnv asks
-if command -v direnv &> /dev/null; then
+if command -v direnv > /dev/null 2>&1; then
     eval "$(direnv hook bash)"
 fi
+
+# --- end ---
 
 # lets .bash_profile skip sourcing this file a second time; not exported, so child shells still load it
 # shellcheck disable=SC2034 # read by .bash_profile

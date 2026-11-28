@@ -1,0 +1,677 @@
+---
+
+# Tricks for the `trick` command, shown one at a time with a live demo.
+# `task lint:tricks` checks the fields; `task test:tricks` runs the demos on this system.
+#
+#   title  the card's heading; also how `trick` remembers that you have seen it
+#   text   1-3 lines of Markdown
+#   tool   the command it needs; skipped where it is missing. Leave it out for a shell feature.
+#   os     macos, linux or any (default). zsh-only features are macos and bash-only ones linux,
+#          since that is the shell setup configures on each.
+#   demo   typed out, then run in ~/unixenv: read-only, done within a second, no network, and
+#          with --color=always where the tool has it, since the output goes through a pipe
+#   try    put on the command line after the trick (zsh), or into history (bash: press ↑)
+
+- title: Back to the previous folder
+  text: |
+    `cd -` jumps back to the folder you were in before, and again to return. `git switch -` does the
+    same for branches.
+
+- title: Copies of a file without typing its name twice
+  demo: echo cp cheat.md{,.bak}
+  try: echo file{1..3}.txt
+  text: |
+    The shell expands `name{,.bak}` to `name name.bak`: `cp config{,.bak}` makes a backup.
+
+- title: Number ranges with leading zeros
+  demo: echo log-{08..12}.txt
+  try: mkdir -p photos/{2024,2025}/{01..12}
+  text: |
+    `{01..12}` keeps the zeros, and several braces multiply: one command makes 24 folders.
+
+- title: Create a folder and step into it
+  try: mkdir -p demo/nested && cd $_
+  text: |
+    `$_` is the last argument of the previous command, so `mkdir -p a/b && cd $_` lands in a/b.
+
+- title: Run the last command with sudo
+  text: |
+    `sudo !!` repeats the previous command with sudo in front. `!$` is its last argument:
+    `ls /etc/nginx` then `cd !$`.
+
+- title: Insert the last argument again
+  text: |
+    Alt-. inserts the last argument of the previous command; press it again for the one before.
+    In iTerm2, Option must send Esc+ (Profiles → Keys).
+
+- title: Move fast on the command line
+  text: |
+    Ctrl-A and Ctrl-E jump to the start and end of the line; Alt-B and Alt-F move one word back or
+    forward.
+
+- title: Park a command and come back to it
+  tool: zsh
+  os: macos
+  text: |
+    Halfway through a long command, press Alt-Q: the line clears, you run something else, and the
+    parked line comes back at the next prompt.
+
+- title: Fix the last command in an editor
+  tool: fc
+  text: |
+    `fc` opens the previous command in nano; save and quit to run the edited version. `fc -l`
+    lists recent commands with their numbers.
+
+- title: Find files anywhere below with **
+  tool: zsh
+  os: macos
+  demo: zsh -c 'print -l src/**/*.toml'
+  try: ls -l **/*.md
+  text: |
+    zsh's `**/` matches any depth of folders: `ls **/*.md` lists Markdown files everywhere below.
+
+- title: Compare the output of two commands
+  tool: diff
+  demo: diff <(ls src/linux) <(ls src/macos)
+  try: diff <(ls -1 ~) <(ls -1A ~)
+  text: |
+    `<(cmd)` turns a command's output into a file name, so diff, comm and others take commands
+    instead of files.
+
+- title: Count and rank anything
+  tool: sort
+  demo: git ls-files | sed -n 's/.*\.//p' | sort | uniq -c | sort -rn | head -n 5
+  text: |
+    `sort | uniq -c | sort -rn` counts identical lines and ranks them: file types, IPs in a log,
+    error messages.
+
+- title: Run commands in parallel
+  tool: xargs
+  demo: printf '%s\n' 3 1 2 | xargs -P 3 -I{} sh -c 'sleep 0.{}; echo finished {}'
+  text: |
+    `xargs -P 4` runs up to 4 commands at once; `-I{}` puts each input line where `{}` is.
+
+- title: Edit files in place on macOS and Linux alike
+  tool: sed
+  text: |
+    `sed -i.bak 's/old/new/' file` works with both macOS and GNU sed and keeps file.bak; a bare
+    `-i` behaves differently on each.
+
+- title: Follow a log and scroll back
+  tool: less
+  text: |
+    `less +F` follows a file like `tail -f`; Ctrl-C stops following so you can scroll and search,
+    and F follows again.
+
+- title: Search only one kind of file
+  tool: rg
+  demo: rg --color=always -t sh -c 'function' src
+  try: rg -t go 'func main'
+  text: |
+    `rg -t <type>` searches only that language; `-T <type>` leaves it out. `rg --type-list` shows
+    them all.
+
+- title: Search with a glob and skip folders
+  tool: rg
+  demo: rg --color=always -g '*.toml' -g '!etc/**' 'latest' | head -n 4
+  try: rg -g '!vendor/**' 'TODO'
+  text: |
+    `-g '*.go'` limits the search to matching paths, `-g '!vendor/**'` leaves them out.
+
+- title: Preview a replacement before making it
+  tool: rg
+  demo: rg --color=always '^export (\w+)=(.*)' -r '$1 → $2' src/generic/rc.sh | head -n 4
+  text: |
+    `rg pattern -r replacement` prints matches with the replacement applied, without changing any
+    file: a dry run before sed.
+
+- title: Run a command on every file found
+  tool: fd
+  try: fd -e png -x echo converting {}
+  text: |
+    `fd -x cmd` runs a command per result, in parallel; `{}` is the path, `{.}` the path without
+    extension.
+
+- title: Files changed recently
+  tool: fd
+  demo: fd --color=always --changed-within 7d -t f . src | head -n 5
+  try: fd --changed-within 1d
+  text: |
+    `--changed-within 2h` finds what changed in the last two hours; `--changed-before 1y` finds the
+    old stuff.
+
+- title: A folder tree that skips ignored files
+  tool: eza
+  demo: eza --color=always --tree --level=2 --git-ignore src | head -n 12
+  try: eza --tree --level=2 --git-ignore
+  text: |
+    `--git-ignore` hides build output and other ignored files, so the tree shows only what matters.
+
+- title: Git status next to each file
+  tool: eza
+  demo: eza --color=always -l --git --no-user --no-time src/generic
+  try: eza -l --git
+  text: |
+    `eza -l --git` adds a column with each file's git state: modified, new or ignored.
+
+- title: What is taking the space
+  tool: dust
+  demo: dust -d 1 -n 6 src
+  try: dust -d 2
+  text: |
+    `dust` draws a bar per folder, largest last, so the answer is at the bottom of your screen.
+
+- title: Show only some lines of a file
+  tool: bat
+  demo: bat --color=always --style=numbers -r 1:3 src/generic/rc.sh
+  try: bat -r 1:20 cheat.md
+  text: |
+    `bat -r 10:20` prints lines 10 to 20 with syntax colors; `-r 40:` prints from line 40 to the end.
+
+- title: Show what changed in a file
+  tool: bat
+  try: bat -d src/generic/rc.sh
+  text: |
+    `bat -d file` shows only the lines changed since the last commit, with a little context.
+
+- title: Pull fields out of JSON
+  tool: jq
+  demo: echo '{"user":{"name":"ada","langs":["go","rust"]}}' | jq -C '.user.langs[]'
+  try: 'curl -s https://api.github.com/repos/jqlang/jq | jq ''{stars: .stargazers_count, lang: .language}'''
+  text: |
+    `.a.b[]` walks into objects and lists; `{x: .a}` builds a new object from the parts you want.
+
+- title: Filter JSON lists
+  tool: jq
+  demo: echo '[{"n":"a","age":31},{"n":"b","age":25}]' | jq -C '.[] | select(.age > 30) | .n'
+  text: |
+    `select(cond)` keeps only the items where the condition holds; `-r` prints strings without
+    quotes.
+
+- title: Convert between YAML and JSON
+  tool: yq
+  demo: yq -o json '.tasks.lint.cmds[0]' Taskfile.yaml
+  try: yq -p json -o yaml package.json
+  text: |
+    `-o json` writes JSON and `-p json` reads it, so one tool converts both ways.
+
+- title: Which command is faster
+  tool: hyperfine
+  demo: hyperfine -N --style basic --warmup 1 --runs 5 'sleep 0.01' 'sleep 0.02' 2>&1 | grep -v Memory
+  try: hf 'sleep 0.1' 'sleep 0.2'
+  text: |
+    `hf` (hyperfine) runs each command many times and says how much faster the winner is.
+
+- title: Watch a command for changes
+  tool: watch
+  try: watch -n 2 -d 'ls -l'
+  text: |
+    `-d` highlights what changed since the last run, so a growing file or a new pod stands out.
+
+- title: History search sorted two ways
+  tool: fzf
+  text: |
+    Ctrl-R searches your history with fzf; press Ctrl-R again to switch between relevance and time
+    order.
+
+- title: Paste a file path into any command
+  tool: fzf
+  text: |
+    Press Ctrl-T in the middle of a command line to pick a file with a live preview; its path is
+    pasted at the cursor. Alt-C jumps into a subfolder.
+
+- title: Complete anything with **
+  tool: fzf
+  try: kill -9 **
+  text: |
+    Type `**` and press Tab: after `kill` it lists processes, after `ssh` your hosts, elsewhere
+    files, all in fzf.
+
+- title: Jump to a folder you used before
+  tool: zoxide
+  try: zi
+  text: |
+    `z part` jumps to the most used folder matching `part`; `zi` opens a picker of all of them.
+
+- title: A shell inside Midnight Commander
+  tool: mc
+  text: |
+    In `mc`, Ctrl-O hides the panels and shows a shell in the current folder; Ctrl-O again brings
+    them back. F5 copies, F6 moves.
+
+- title: Read Markdown in the terminal
+  tool: glow
+  try: glow
+  text: |
+    `glow` with no arguments lists the Markdown files below this folder to browse; `glow -p file.md`
+    pages one.
+
+- title: Examples instead of man pages
+  tool: tldr
+  try: tldr tar
+  text: |
+    `tldr tar` shows the handful of tar commands people actually use.
+
+- title: Cheat sheets on a key
+  tool: navi
+  os: linux
+  text: |
+    Ctrl-G opens navi: pick a command from its cheat sheets and it is pasted with the blanks to fill
+    in.
+
+- title: Your own cheat sheet
+  tool: cheat
+  try: cheat git
+  text: |
+    `cheat` shows this project's cheat sheet; words after it filter it: `cheat docker logs`.
+
+- title: Fix an older commit
+  tool: git
+  try: git commit --fixup=HEAD~2
+  text: |
+    Commit the fix with `--fixup=<sha>`, then `grb 3`: rebase moves it next to that commit and
+    squashes it in.
+
+- title: Stage only part of a file
+  tool: git
+  try: git add -p
+  text: |
+    `git add -p` walks through each change: y stages it, n skips it, s splits it into smaller
+    pieces.
+
+- title: Find the commit that added a line
+  tool: git
+  demo: git --no-pager log --color=always --oneline -S 'zoxide' | head -n 5
+  try: git log -S 'text' --oneline
+  text: |
+    `git log -S text` lists commits that added or removed that text, even after the code is long
+    gone.
+
+- title: Get back a lost commit
+  tool: git
+  try: git reflog | head -n 20
+  text: |
+    After a bad reset or rebase, `git reflog` still lists where HEAD was; `git reset --hard HEAD@{2}`
+    goes back.
+
+- title: Two branches checked out at once
+  tool: git
+  try: git worktree list
+  text: |
+    `git worktree add ../hotfix main` checks main out in another folder, so you can fix it without
+    stashing.
+
+- title: Conflicts resolved once
+  tool: git
+  text: |
+    rerere is on: git remembers how you resolved a conflict and applies the same fix when it shows
+    up again in a rebase.
+
+- title: Who really wrote a line
+  tool: git
+  try: git blame -w -C -C src/generic/rc.sh
+  text: |
+    `-w` ignores whitespace changes and `-C -C` follows lines moved from other files, so blame
+    skips the reformatting commits.
+
+- title: Switch branches with fzf
+  tool: git
+  try: git branch --format='%(refname:short)' | fzf | xargs git switch
+  text: |
+    `git branch` lists the most recently used branches first here, so the one you want is usually
+    at the top.
+
+- title: Diffs side by side
+  tool: delta
+  try: git diff | delta -s
+  text: |
+    `delta -s` shows old and new side by side; in long diffs, n and N jump between files.
+
+- title: Browse history in a TUI
+  tool: tig
+  try: tig status
+  text: |
+    `tig` browses commits; `tig blame file` walks a file's history line by line, and `tig status`
+    stages with u.
+
+- title: Check out a pull request
+  tool: gh
+  try: gh pr checkout
+  text: |
+    `gh pr checkout 123` fetches the PR's branch and switches to it; `gh pr view --web` opens it.
+
+- title: Compose shortcuts
+  tool: docker
+  text: |
+    `dc ps` is a compact table, `dcr api` restarts a service and follows its logs, `dcrb api`
+    rebuilds it from scratch.
+
+- title: Watch a container's traffic
+  tool: docker
+  try: dnet postgres
+  text: |
+    `dnet name` shows live network traffic of the container whose name matches, from a helper
+    container; nothing to install inside.
+
+- title: Where Docker's disk space went
+  tool: docker
+  try: docker system df
+  text: |
+    `docker system df` sums images, containers, volumes and build cache; `docker system prune`
+    frees what is unused.
+
+- title: Log analysis in the terminal
+  tool: gonzo
+  try: dc logs -f | gonzo
+  text: |
+    Pipe logs into `gonzo` for live counts by level, common patterns and a searchable stream.
+
+- title: kubectl with a per-project config
+  tool: kubectl
+  text: |
+    `k` is kubectl, using ./.kubeconfig when the folder has one; `k9s` does the same. No more
+    exporting KUBECONFIG.
+
+- title: Recent cluster events
+  tool: kubectl
+  try: kubectl get events --sort-by=.lastTimestamp | tail -n 20
+  text: |
+    Sorted events show why a pod is pending or restarting: failed pulls, OOM kills, probes.
+
+- title: Move around k9s
+  tool: k9s
+  text: |
+    In k9s, `:` jumps to a resource (`:deploy`), `/` filters, `l` shows logs, `s` opens a shell
+    and `0` shows all namespaces.
+
+- title: Undo a helm upgrade
+  tool: helm
+  try: helm history
+  text: |
+    `helm history release` lists its revisions; `helm rollback release 3` returns to revision 3.
+
+- title: Find and kill a process in bottom
+  tool: btm
+  text: |
+    In `btm`, `/` searches processes, `t` shows them as a tree, `dd` kills the selected one and `e`
+    enlarges a panel.
+
+- title: Graph how long commands take
+  tool: gping
+  try: gping --cmd 'curl -s -o /dev/null https://example.com'
+  text: |
+    `gping --cmd` graphs a command's run time instead of ping latency, live and side by side.
+
+- title: Where packets get lost
+  tool: trip
+  try: sudo trip example.com
+  text: |
+    `trip` traces every hop to a host with live loss and latency; `-u` tries without sudo.
+
+- title: Who is using a port
+  tool: lsof
+  try: lsof -nP -i :8080
+  text: |
+    `lsof -i :8080` names the process listening on or connected to port 8080.
+
+- title: Is a port open
+  tool: nc
+  try: nc -zv github.com 22
+  text: |
+    `nc -zv host port` checks whether a port accepts connections, without sending anything.
+
+- title: When a certificate expires
+  tool: openssl
+  try: openssl s_client -connect github.com:443 -servername github.com < /dev/null 2> /dev/null | openssl x509 -noout -dates
+  text: |
+    Prints the notBefore and notAfter dates of the certificate a server presents.
+
+- title: How long each part of a request takes
+  tool: curl
+  try: curl -s -o /dev/null -w 'dns %{time_namelookup}  connect %{time_connect}  total %{time_total}\n' https://example.com
+  text: |
+    `-w` prints curl's timing variables: DNS, connect, TLS and total, to see where the wait is.
+
+- title: Share a folder over HTTP
+  tool: python3
+  try: python3 -m http.server 8000
+  text: |
+    Serves the current folder at http://localhost:8000 for a quick download from another device.
+
+- title: Copy folders with rsync
+  tool: rsync
+  try: rsync -av --progress src/ backup/src/
+  text: |
+    A trailing slash on the source copies its contents, none copies the folder itself; rerunning
+    copies only what changed.
+
+- title: Tunnel a remote port
+  tool: ssh
+  try: ssh -N -L 5432:localhost:5432 server
+  text: |
+    `-L 5432:localhost:5432` makes the server's database answer on your localhost:5432; `-N` runs no
+    remote command.
+
+- title: Reach a host behind a bastion
+  tool: ssh
+  try: ssh -J bastion internal-host
+  text: |
+    `ssh -J bastion host` hops through the bastion in one command; scp and rsync accept it too.
+
+- title: Instant second ssh session
+  tool: ssh
+  text: |
+    ssh here keeps one connection per host for 10 minutes, so a second `ssh` or `scp` opens
+    instantly. `ssh -O exit host` closes it.
+
+- title: A session that survives dropped Wi-Fi
+  tool: hop
+  try: hop server
+  text: |
+    `hop server` connects with mosh when it can and attaches to the session "main" in zellij or
+    tmux; run it again to come back.
+
+- title: Fix a terminal printing garbage
+  tool: term-reset
+  text: |
+    After a remote app crashed, mouse moves can print escape codes; `term-reset` turns those modes
+    off and keeps the scrollback.
+
+- title: zellij in two keys
+  tool: zellij
+  text: |
+    In zellij, Ctrl-B unlocks the next key: `p` then `r` opens a pane on the right, `o` then `d`
+    detaches.
+
+- title: Load settings per folder
+  tool: direnv
+  text: |
+    Put `dotenv` or `export KEY=value` lines in .envrc and run `direnv allow`: they load on cd and
+    unload when you leave.
+
+- title: Why the prompt looks like that
+  tool: starship
+  try: starship explain
+  text: |
+    `starship explain` lists each part of the prompt and what it means; `starship timings` shows
+    which one is slow.
+
+- title: A backup of every nano save
+  tool: nano
+  text: |
+    Each save in nano keeps the previous version in ~/.local/state/nano/backups, so an overwritten
+    file can come back.
+
+- title: Ask Claude about any output
+  tool: claude
+  try: git diff | claude -p 'write a commit message for this diff'
+  text: |
+    `claude -p` answers once and exits, and it reads piped input: errors, logs or diffs.
+
+- title: Hand a task to Codex
+  tool: codex
+  try: codex exec 'explain what this repository does'
+  text: |
+    `codex exec` runs one task without the interactive screen, which also suits scripts.
+
+- title: Copy command output to the clipboard
+  tool: pbcopy
+  os: macos
+  try: pwd | pbcopy
+  text: |
+    `pbcopy` puts whatever is piped into it on the clipboard; `pbpaste` prints the clipboard.
+
+- title: Keep the Mac awake
+  tool: caffeinate
+  os: macos
+  try: caffeinate -d -t 3600
+  text: |
+    `caffeinate -d -t 3600` keeps the display on for an hour; `caffeinate -i make` keeps the Mac
+    awake until make finishes.
+
+- title: Open anything from the terminal
+  tool: open
+  os: macos
+  try: open .
+  text: |
+    `open .` shows the folder in Finder, `open file.pdf` uses its default app and `open -R file`
+    reveals it in Finder.
+
+- title: How fast is the network
+  tool: networkQuality
+  os: macos
+  try: networkQuality -s
+  text: |
+    Apple's built-in speed test: upload, download and responsiveness under load.
+
+- title: Spotlight from the terminal
+  tool: mdfind
+  os: macos
+  try: mdfind -name invoice
+  text: |
+    `mdfind -name invoice` finds files by name through Spotlight's index, instantly;
+    `mdfind -onlyin ~/src text` searches contents.
+
+- title: A notification when a command finishes
+  tool: osascript
+  os: macos
+  try: sleep 3; osascript -e 'display notification "done" with title "terminal"'
+  text: |
+    Append it to a long build with `;` and macOS tells you when it is done.
+
+- title: Let the Mac say it
+  tool: say
+  os: macos
+  try: say 'build finished'
+  text: |
+    `say` speaks any text: `make; say done` calls you back from the kitchen.
+
+- title: Resize images without an app
+  tool: sips
+  os: macos
+  try: sips -Z 1200 photo.jpg --out small.jpg
+  text: |
+    `sips -Z 1200` scales an image so its longest side is 1200 pixels; `--out` keeps the original.
+
+- title: Battery and power state
+  tool: pmset
+  os: macos
+  demo: pmset -g batt
+  text: |
+    `pmset -g batt` shows charge and time left; `power off` disables deep sleep when the Mac must
+    stay reachable.
+
+- title: Which macOS and which hardware
+  tool: sw_vers
+  os: macos
+  demo: sw_vers
+  try: system_profiler SPHardwareDataType
+  text: |
+    `sw_vers` prints the macOS version; `system_profiler SPHardwareDataType` the model, chip and
+    memory.
+
+- title: Open an app macOS blocks
+  tool: xattr
+  os: macos
+  try: xattr -l ~/Downloads/*.dmg
+  text: |
+    Downloads carry a quarantine flag; `xattr -d com.apple.quarantine app` removes it for an app
+    you trust.
+
+- title: Which DNS servers are used
+  tool: scutil
+  os: macos
+  try: scutil --dns | grep nameserver | sort -u
+  text: |
+    `scutil --dns` shows the resolvers per interface and VPN, which /etc/resolv.conf does not.
+
+- title: Which ports are listening
+  tool: ss
+  os: linux
+  demo: ss -tln | head -n 8
+  try: sudo ss -tlnp
+  text: |
+    `ss -tlnp` lists listening TCP ports and, with sudo, the process behind each one.
+
+- title: Short list of IP addresses
+  tool: ip
+  os: linux
+  demo: ip -br -c address
+  text: |
+    `-br` prints one line per interface instead of a page of details; `-c` adds colors.
+
+- title: Follow a service's log
+  tool: journalctl
+  os: linux
+  try: journalctl -fu ssh
+  text: |
+    `-u` picks the service and `-f` keeps printing new lines; `--since '10 min ago'` limits the past.
+
+- title: Services that failed
+  tool: systemctl
+  os: linux
+  try: systemctl --failed
+  text: |
+    `systemctl --failed` lists units that did not start; `systemctl status name` shows why.
+
+- title: Disks and their file systems
+  tool: lsblk
+  os: linux
+  try: lsblk -f
+  text: |
+    `lsblk -f` shows disks, partitions, file systems, labels and where each is mounted.
+
+- title: Disk space without the noise
+  tool: df
+  os: linux
+  demo: df -hT -x tmpfs -x devtmpfs -x overlay | head -n 6
+  text: |
+    `df -hT` shows the file system type; `-x tmpfs` hides the memory-backed mounts.
+
+- title: Memory at a glance
+  tool: free
+  os: linux
+  demo: free -h
+  text: |
+    Look at "available", not "free": Linux fills spare memory with cache it gives back on demand.
+
+- title: Top memory users
+  tool: ps
+  os: linux
+  demo: ps -eo pid,comm,%mem --sort=-%mem | head -n 6
+  text: |
+    `--sort=-%mem` sorts by memory, `-%cpu` by CPU; `-o` picks the columns.
+
+- title: Stop a command after a while
+  tool: timeout
+  os: linux
+  demo: timeout 0.5 sleep 5; echo "exit code $?"
+  try: timeout 10 curl -s https://example.com
+  text: |
+    `timeout 10 cmd` kills the command after 10 seconds and exits with 124 so scripts can tell.
+
+- title: Quieter SSH logins on Ubuntu
+  tool: motd-quiet
+  os: linux
+  text: |-
+    `motd-quiet` turns off Ubuntu's login news and ads but keeps the reboot-required notice.

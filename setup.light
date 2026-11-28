@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Light setup: no Homebrew and no sudo. Tools come from mise, installed per user into ~/.local
-# (list: src/mise-tools.toml); configs, scripts and shell files are the same as in setup.
-# Shared steps live in src/setup/lib.sh.
+# Light setup: no Homebrew and no sudo.
 #
 # Prerequisites: git & curl
 
@@ -63,13 +61,19 @@ tools() {
 
     # Like brew bundle, also update what an earlier run installed: with "latest", mise install only
     # adds missing tools. Upgrade and prune are limited to this list, so mise tools of your own stay
-    # as they are; prune removes the versions the upgrade replaced.
-    local list=() tool
-    while IFS= read -r tool; do
+    # as they are; prune removes the versions the upgrade (or a changed pin) replaced. Pinned tools
+    # are left out of the upgrade: there is nothing to upgrade, and mise warns that it cannot find
+    # a latest version for http: tools.
+    local list=() latest=() tool version
+    while IFS=' ' read -r tool version; do
         list+=("$tool")
-    done < <(awk -F= '/^\[tools\]/ { t = 1; next } /^\[/ { t = 0 } t && /=/ && !/^#/ { gsub(/[" ]/, "", $1); print $1 }' \
-        "$CLONE_DIR/src/mise-tools.toml")
-    if ! mise upgrade "${list[@]}"; then
+        if [ "$version" = latest ]; then
+            latest+=("$tool")
+        fi
+    done < <(awk -F= '/^\[tools\]/ { t = 1; next } /^\[/ { t = 0 } t && /=/ && !/^#/ {
+            name = $1; gsub(/[" ]/, "", name)
+            print name, (/"latest"/ ? "latest" : "pinned") }' "$CLONE_DIR/src/mise-tools.toml")
+    if ! mise upgrade "${latest[@]}"; then
         echo "Warning: some tools failed to upgrade; run 'mise upgrade' again later." >&2
     fi
     mise prune --tools --yes "${list[@]}"
@@ -78,12 +82,30 @@ tools() {
     mise cache clear
 }
 
+# mise only unpacks the font; copy the files the Homebrew cask installs into the user's font folder.
+fonts() {
+    local dir file
+    if ! dir=$(mise where github:microsoft/cascadia-code 2> /dev/null); then
+        echo "Warning: Cascadia Code is not installed; run setup.light again later." >&2
+        return 0
+    fi
+    mkdir -p "$HOME/Library/Fonts"
+    for file in CascadiaCode.ttf CascadiaCodeItalic.ttf; do
+        if ! cmp -s "$dir/ttf/$file" "$HOME/Library/Fonts/$file"; then
+            cp "$dir/ttf/$file" "$HOME/Library/Fonts/$file"
+        fi
+    done
+}
+
 parse_args "$@"
 check_prerequisites curl
 self_update "$SCRIPT" "$@"
 enter_tmp_dir
 
 tools
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    fonts
+fi
 configs
 scripts
 shell_files
